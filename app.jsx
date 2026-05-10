@@ -46,10 +46,15 @@ function App() {
   const [introDone, setIntroDone] = useState(false);
   const [zoom, setZoom] = useState(null); // { src, caption }
   const [expanded, setExpanded] = useState(false);
+  const [tweaksOpen, setTweaksOpen] = useState(false);
   const positionsRef = useRef({});
   const { isFS, toggle: toggleFS } = useFullscreen();
 
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+  const openTweaks = useCallback(() => {
+    window.dispatchEvent(new MessageEvent('message', { data: { type: '__activate_edit_mode' } }));
+  }, []);
 
   // 앱 시작 시 마이그레이션 후 라이브러리·위치 로드
   useEffect(() => {
@@ -112,13 +117,14 @@ function App() {
     setIntroDone(!t.showIntro);
   }, [t.showIntro]);
 
-  const loadSample = useCallback(async () => {
+  const loadSample = useCallback(async (mode) => {
     try {
       const res = await fetch('sample-book.json');
       const data = await res.json();
+      if (mode) setTweak('mode', mode);
       handleLoad(data);
     } catch {}
-  }, [handleLoad]);
+  }, [handleLoad, setTweak]);
 
   const openFromLibrary = useCallback((i) => {
     const b = library[i];
@@ -173,6 +179,7 @@ function App() {
         </div>
         <div className="book-topbar-right">
           <span className="book-author-mini">글·그림 {book.student?.name || ''}</span>
+          <button className="icon-btn" onClick={openTweaks} title="디자인·보기 방식 바꾸기" aria-label="디자인 패널 열기">🎨</button>
           <button
             className={`icon-btn${expanded ? ' active' : ''}`}
             onClick={() => setExpanded((v) => !v)}

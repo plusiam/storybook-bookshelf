@@ -84,6 +84,7 @@ function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample,
   const [error, setError] = useState(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const [showHowTo, setShowHowTo] = useState(false);
+  const [showSampleModes, setShowSampleModes] = useState(false);
   const inputRef = useRef(null);
 
   const handleFiles = useCallback(async (files) => {
@@ -195,10 +196,10 @@ function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample,
 
         {/* 메인 액션 카드 */}
         <div className="action-cards">
-          <button className="action-card action-card--sample" onClick={onLoadSample}>
+          <button className="action-card action-card--sample" onClick={() => setShowSampleModes((v) => !v)}>
             <span className="action-card-icon">✨</span>
             <span className="action-card-label">샘플 그림책</span>
-            <span className="action-card-desc">펼쳐보기</span>
+            <span className="action-card-desc">보기 방식 선택</span>
           </button>
           <a
             className="action-card action-card--make"
@@ -216,6 +217,33 @@ function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample,
             <span className="action-card-desc">도움말 보기</span>
           </button>
         </div>
+
+        {/* 샘플 보기 방식 선택 */}
+        {showSampleModes && (
+          <div className="sample-mode-panel">
+            <p className="sample-mode-title">어떻게 펼쳐볼까요?</p>
+            <div className="sample-mode-cards">
+              <button className="sample-mode-card" onClick={() => { onLoadSample('flat'); setShowSampleModes(false); }}>
+                <span className="sample-mode-icon">📖</span>
+                <span className="sample-mode-name">두 면</span>
+                <span className="sample-mode-desc">실제 책처럼<br/>두 페이지 펼침</span>
+                <span className="sample-mode-tag">전자칠판 발표</span>
+              </button>
+              <button className="sample-mode-card" onClick={() => { onLoadSample('spread'); setShowSampleModes(false); }}>
+                <span className="sample-mode-icon">🖼</span>
+                <span className="sample-mode-name">그림 + 글</span>
+                <span className="sample-mode-desc">왼쪽 그림<br/>오른쪽 이야기</span>
+                <span className="sample-mode-tag">태블릿 감상</span>
+              </button>
+              <button className="sample-mode-card" onClick={() => { onLoadSample('slide'); setShowSampleModes(false); }}>
+                <span className="sample-mode-icon">▶</span>
+                <span className="sample-mode-name">한 면</span>
+                <span className="sample-mode-desc">한 장씩 넘기며<br/>이야기 나누기</span>
+                <span className="sample-mode-tag">학급 감상회</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 책장 관리 */}
         {hasLibrary && (
