@@ -1340,18 +1340,19 @@ html, body {
 
 .page-text {
   font-family: var(--font-storybook);
-  font-size: clamp(15px, 1.6vw, 20px);
+  font-size: calc(clamp(15px, 1.6vw, 20px) * var(--text-scale, 1));
   line-height: 1.85;
   color: var(--ink);
   white-space: pre-wrap;
   letter-spacing: -0.1px;
   word-break: keep-all;
+  overflow-wrap: break-word;
   text-wrap: pretty;
 }
 
 .page-prompt {
   font-family: var(--font-hand);
-  font-size: clamp(20px, 2.2vw, 28px);
+  font-size: calc(clamp(20px, 2.2vw, 28px) * var(--text-scale, 1));
   color: var(--accent);
   margin: 0 0 8px;
   transform: rotate(-1.5deg);
@@ -1376,12 +1377,12 @@ html, body {
 .layout-classic { gap: 14px; }
 .layout-classic .page-image {
   flex: 1 1 auto;
-  min-height: 38%;
+  min-height: 0;
   margin-bottom: 0;
 }
 .layout-classic .page-text-block {
   flex: 0 0 auto;
-  max-height: 46%;
+  max-height: 50%;
   overflow-y: auto;
   padding-bottom: 28px; /* page-number 자리 */
 }
@@ -1396,11 +1397,12 @@ html, body {
 }
 .page-meta-row .page-prompt { margin: 0; }
 
-/* 텍스트 블록 공통 — 너무 길면 폰트 자동 축소되도록 */
+/* 텍스트 블록 공통 */
 .page-text-block {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow-y: auto;
 }
 
 /* 레이아웃: immersive — 그림 풀, 텍스트 오버레이 */
@@ -1415,9 +1417,11 @@ html, body {
 .layout-immersive .page-text-block {
   position: absolute;
   left: 0; right: 0; bottom: 0;
+  max-height: 55%;
   padding: clamp(20px, 4%, 36px);
   background: linear-gradient(to top, rgba(255,247,235,0.95) 0%, rgba(255,247,235,0.85) 50%, transparent 100%);
   color: var(--ink);
+  overflow-y: auto;
 }
 
 /* 레이아웃: gallery — 그림 가운데 큰 액자 */
@@ -1445,12 +1449,12 @@ html, body {
   text-align: center;
 }
 .layout-typography .page-text {
-  font-size: clamp(22px, 2.6vw, 30px);
+  font-size: calc(clamp(22px, 2.6vw, 30px) * var(--text-scale, 1));
   line-height: 1.9;
   max-width: 90%;
 }
 .layout-typography .page-prompt {
-  font-size: clamp(28px, 3.4vw, 40px);
+  font-size: calc(clamp(28px, 3.4vw, 40px) * var(--text-scale, 1));
   margin-bottom: 24px;
 }
 
@@ -1621,22 +1625,23 @@ html, body {
 }
 .author-greeting {
   font-family: var(--font-hand);
-  font-size: clamp(22px, 2.4vw, 28px);
+  font-size: calc(clamp(22px, 2.4vw, 28px) * var(--text-scale, 1));
   color: var(--accent);
   margin: 0;
 }
 .author-name-big {
   font-family: var(--font-display);
-  font-size: clamp(28px, 3.4vw, 38px);
+  font-size: calc(clamp(28px, 3.4vw, 38px) * var(--text-scale, 1));
   margin: 0;
 }
 .author-message {
   font-family: var(--font-storybook);
-  font-size: clamp(15px, 1.6vw, 18px);
+  font-size: calc(clamp(15px, 1.6vw, 18px) * var(--text-scale, 1));
   line-height: 1.8;
   color: var(--ink);
   max-width: 80%;
   white-space: pre-wrap;
+  overflow-wrap: break-word;
 }
 .author-dedication {
   margin-top: auto;

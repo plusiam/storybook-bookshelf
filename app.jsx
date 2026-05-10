@@ -1,5 +1,5 @@
 /* global React, ReactDOM, UploadScreen, BookViewer, IntroAnimation, normalizeBook,
-          ZoomModal, TweaksPanel, useTweaks, TweakSection, TweakRadio, TweakSelect, TweakToggle, TweakButton,
+          ZoomModal, TweaksPanel, useTweaks, TweakSection, TweakRadio, TweakSelect, TweakToggle, TweakButton, TweakSlider,
           PB_IDB */
 const { useState, useEffect, useCallback, useRef } = React;
 
@@ -9,6 +9,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "layout": "classic",
   "coverVariant": "classic",
   "fontFamily": "playful",
+  "textScale": 1,
   "soundOn": true,
   "showIntro": true
 }/*EDITMODE-END*/;
@@ -169,7 +170,7 @@ function App() {
   const initialPos = positionsRef.current[bk] || 0;
 
   return (
-    <div className={`book-screen${expanded ? ' is-expanded' : ''}`}>
+    <div className={`book-screen${expanded ? ' is-expanded' : ''}`} style={{ '--text-scale': t.textScale }}>
       <div className="book-topbar">
         <div className="book-topbar-left">
           {!expanded && (
@@ -243,6 +244,7 @@ function App() {
               { value: 'cute', label: '🌸 귀여운' },
             ]}
           />
+          <TweakSlider label="글자 크기" value={t.textScale} min={0.8} max={1.5} step={0.05} unit="×" onChange={(v) => setTweak('textScale', v)} />
         </TweakSection>
 
         <TweakSection label="표지 디자인">
