@@ -284,8 +284,8 @@ html, body {
   z-index: 0;
 }
 
-/* ===== 책등 ===== */
-.book-spine {
+/* ===== 책등 (책장 UI) ===== */
+.shelf-book-spine {
   --spine-bg: #d97757;
   --spine-accent: #a85a3e;
   position: relative;
@@ -308,7 +308,7 @@ html, body {
     0 6px 12px rgba(58,30,10,0.25);
   transform-origin: bottom center;
 }
-.book-spine:hover {
+.shelf-book-spine:hover {
   transform: translateY(-12px) rotate(0deg) !important;
   filter: brightness(1.08);
   z-index: 5;
@@ -395,7 +395,7 @@ html, body {
   transition: opacity 0.15s ease;
   z-index: 6;
 }
-.book-spine:hover .book-spine-remove { opacity: 1; }
+.shelf-book-spine:hover .book-spine-remove { opacity: 1; }
 
 /* ===== 드롭 슬롯 (빈 책 자리) ===== */
 .shelf-slot {
@@ -865,7 +865,7 @@ html, body {
   transition: opacity 0.15s ease;
   z-index: 6;
 }
-.book-spine:hover .book-spine-export { opacity: 1; }
+.shelf-book-spine:hover .book-spine-export { opacity: 1; }
 
 /* 책장 관리 버튼 영역 */
 .shelf-actions {
@@ -935,7 +935,7 @@ html, body {
     -webkit-overflow-scrolling: touch;
   }
   .bookshelf-row::-webkit-scrollbar { display: none; }
-  .book-spine, .shelf-slot { scroll-snap-align: start; }
+  .shelf-book-spine, .shelf-slot { scroll-snap-align: start; }
   .scene-window { display: none; }
   .action-cards { padding: 0 20px; }
   .action-card { width: 96px; padding: 14px 8px 12px; }

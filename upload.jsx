@@ -343,7 +343,7 @@ function BookSpine({ book, onClick, onRemove, index }) {
 
   return (
     <div
-      className="book-spine"
+      className="shelf-book-spine"
       style={{ '--spine-bg': c.bg, '--spine-accent': c.accent, width: `${width}px`, transform: `rotate(${tilt}deg)` }}
       onClick={onClick}
       role="button"

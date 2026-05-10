@@ -143,7 +143,8 @@ async function migrateFromLocalStorage() {
 
 function bookKeyFromData(book) {
   const s = book?.student || {};
-  return `${s.class || ''}-${s.name || ''}-${s.title || ''}`;
+  const pageCount = (book?.pages || []).length;
+  return `${s.class || ''}-${s.name || ''}-${s.title || ''}-${pageCount}`;
 }
 
 async function clearLibraryIDB() {
