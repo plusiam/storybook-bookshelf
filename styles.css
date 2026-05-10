@@ -718,6 +718,43 @@ html, body {
   max-width: 92vw;
 }
 
+/* ── 꽉 찬 화면 모드 ── */
+.book-screen.is-expanded .book-topbar {
+  padding: 8px 16px;
+  background: rgba(0,0,0,0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.book-screen.is-expanded .book-bottombar {
+  padding: 8px 16px 10px;
+}
+.book-screen.is-expanded .book {
+  width: min(98vw, 9999px);
+  max-height: calc(100vh - 110px);
+}
+.book-screen.is-expanded .book.single-page {
+  height: calc(100vh - 110px);
+  width: auto;
+  max-width: 98vw;
+}
+.book-screen.is-expanded .slide-stage {
+  height: calc(100vh - 110px);
+}
+.book-screen.is-expanded .slide-card {
+  height: 100%;
+}
+
+/* 전체화면(Fullscreen API) 진입 시 추가 여백 제거 */
+:fullscreen .book-screen.is-expanded .book,
+:-webkit-full-screen .book-screen.is-expanded .book {
+  max-height: calc(100vh - 100px);
+  width: 99vw;
+}
+:fullscreen .book-screen .book,
+:-webkit-full-screen .book-screen .book {
+  max-height: calc(100vh - 100px);
+}
+
 .book-half {
   flex: 1;
   position: relative;

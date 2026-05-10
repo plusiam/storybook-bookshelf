@@ -24,12 +24,30 @@ function bookKey(book) {
   return PB_IDB.bookKey(book);
 }
 
+function useFullscreen() {
+  const [isFS, setIsFS] = useState(false);
+
+  useEffect(() => {
+    const onChange = () => setIsFS(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+
+  const enter = () => document.documentElement.requestFullscreen?.().catch(() => {});
+  const exit  = () => document.exitFullscreen?.().catch(() => {});
+  const toggle = () => isFS ? exit() : enter();
+
+  return { isFS, toggle };
+}
+
 function App() {
   const [library, setLibrary] = useState([]);
   const [book, setBook] = useState(null);
   const [introDone, setIntroDone] = useState(false);
   const [zoom, setZoom] = useState(null); // { src, caption }
+  const [expanded, setExpanded] = useState(false);
   const positionsRef = useRef({});
+  const { isFS, toggle: toggleFS } = useFullscreen();
 
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
 
@@ -55,13 +73,15 @@ function App() {
     document.documentElement.style.setProperty('--font-storybook', f.storybook);
   }, [t.theme, t.fontFamily]);
 
-  // ESC로 줌 닫기
+  // ESC로 줌 닫기 / F키로 전체화면 토글
   useEffect(() => {
-    if (!zoom) return;
-    const onKey = (e) => { if (e.key === 'Escape') setZoom(null); };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { setZoom(null); setExpanded(false); }
+      if (e.key === 'f' || e.key === 'F') { if (!zoom) toggleFS(); }
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [zoom]);
+  }, [zoom, toggleFS]);
 
   const handleLoad = useCallback((data, fileName, isMulti) => {
     if (isMulti && Array.isArray(data)) {
@@ -136,14 +156,28 @@ function App() {
   const initialPos = positionsRef.current[bk] || 0;
 
   return (
-    <div className="book-screen">
+    <div className={`book-screen${expanded ? ' is-expanded' : ''}`}>
       <div className="book-topbar">
         <div className="book-topbar-left">
-          <button className="icon-btn" onClick={reset} title="책장으로 돌아가기" aria-label="책장으로 돌아가기">↩</button>
+          {!expanded && (
+            <button className="icon-btn" onClick={reset} title="책장으로 돌아가기" aria-label="책장으로 돌아가기">↩</button>
+          )}
           <h2 className="book-title-mini">{book.student?.title || '나의 그림책'}</h2>
         </div>
         <div className="book-topbar-right">
           <span className="book-author-mini">글·그림 {book.student?.name || ''}</span>
+          <button
+            className={`icon-btn${expanded ? ' active' : ''}`}
+            onClick={() => setExpanded((v) => !v)}
+            title={expanded ? '일반 모드로 (Esc)' : '꽉 찬 화면으로'}
+            aria-label={expanded ? '일반 모드' : '꽉 찬 화면'}
+          >{expanded ? '⊠' : '⊞'}</button>
+          <button
+            className={`icon-btn${isFS ? ' active' : ''}`}
+            onClick={toggleFS}
+            title={isFS ? '전체화면 나가기 (F)' : '전체화면 (F)'}
+            aria-label={isFS ? '전체화면 나가기' : '전체화면'}
+          >{isFS ? '🗗' : '🗖'}</button>
           <button className="icon-btn" onClick={printPDF} title="PDF로 인쇄" aria-label="PDF로 인쇄">🖨</button>
         </div>
       </div>
@@ -232,6 +266,11 @@ function App() {
         <TweakSection label="효과">
           <TweakToggle label="페이지 넘김 소리" value={t.soundOn} onChange={(v) => setTweak('soundOn', v)} />
           <TweakToggle label="표지 인트로 애니메이션" value={t.showIntro} onChange={(v) => setTweak('showIntro', v)} />
+        </TweakSection>
+
+        <TweakSection label="화면">
+          <TweakButton label={expanded ? '⊠ 일반 모드로' : '⊞ 꽉 찬 화면으로'} onClick={() => setExpanded((v) => !v)} secondary />
+          <TweakButton label={isFS ? '🗗 전체화면 나가기' : '🗖 전체화면 (F키)'} onClick={toggleFS} secondary />
         </TweakSection>
 
         <TweakSection label="내보내기">
