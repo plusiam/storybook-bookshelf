@@ -1384,7 +1384,6 @@ html, body {
   flex: 0 0 auto;
   max-height: 50%;
   overflow-y: auto;
-  padding-bottom: 28px; /* page-number 자리 */
 }
 
 /* 페이지 메타(타입 태그 + 프롬프트) */
@@ -1403,6 +1402,7 @@ html, body {
   flex-direction: column;
   min-height: 0;
   overflow-y: auto;
+  padding-bottom: 36px; /* page-number와 여백 확보 */
 }
 
 /* 레이아웃: immersive — 그림 풀, 텍스트 오버레이 */
