@@ -1,5 +1,5 @@
 /* global React, PB_IDB */
-const { useState, useRef, useCallback, useMemo } = React;
+const { useState, useRef, useCallback } = React;
 
 /* ======================================================
    업로드 화면 — 그림책 책장 분위기
@@ -22,10 +22,68 @@ function safeFilename(book) {
   return `${name}_${title}.json`;
 }
 
+/* ── 사용법 모달 ── */
+function HowToModal({ onClose }) {
+  return (
+    <div className="howto-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-label="사용법">
+      <div className="howto-card" onClick={(e) => e.stopPropagation()}>
+        <button className="howto-close" onClick={onClose} aria-label="닫기">×</button>
+        <div className="howto-header">
+          <span className="howto-icon">📚</span>
+          <h2 className="howto-title">그림책 책장 사용법</h2>
+        </div>
+
+        <div className="howto-steps">
+          <div className="howto-step">
+            <div className="howto-step-num">1</div>
+            <div className="howto-step-body">
+              <strong>그림책 만들기</strong>
+              <p>스토리보드 앱에서 이야기를 쓰고 그림을 그려요. 완성하면 <em>JSON 파일</em>로 저장돼요.</p>
+            </div>
+          </div>
+          <div className="howto-step">
+            <div className="howto-step-num">2</div>
+            <div className="howto-step-body">
+              <strong>책장에 꽂기</strong>
+              <p>JSON 파일을 이 화면에 <em>끌어다 놓거나</em> ＋ 슬롯을 클릭해서 불러오면 책장에 꽂혀요.</p>
+            </div>
+          </div>
+          <div className="howto-step">
+            <div className="howto-step-num">3</div>
+            <div className="howto-step-body">
+              <strong>책 펼쳐 보기</strong>
+              <p>책등을 클릭하면 진짜 책처럼 펼쳐져요. 키보드 ← → 또는 스와이프로 페이지를 넘겨요.</p>
+            </div>
+          </div>
+          <div className="howto-step">
+            <div className="howto-step-num">4</div>
+            <div className="howto-step-body">
+              <strong>다른 기기에서 보려면</strong>
+              <p>책등에 마우스를 올리면 나오는 <em>↓ 버튼</em>으로 JSON을 저장해요. 다른 기기에서 다시 꽂으면 돼요.</p>
+            </div>
+          </div>
+          <div className="howto-step">
+            <div className="howto-step-num">5</div>
+            <div className="howto-step-body">
+              <strong>책장 초기화</strong>
+              <p>책장은 이 기기(브라우저)에만 저장돼요. 초기화하면 모두 사라지니, 먼저 <em>전체 내보내기</em>로 백업하세요.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="howto-tip">
+          💡 전자칠판에서 발표할 때는 책 보기 화면의 <strong>⊞ 꽉 찬 화면</strong> 또는 <strong>🗖 전체화면(F키)</strong> 버튼을 눌러보세요.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample, onClearLibrary }) {
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [showHowTo, setShowHowTo] = useState(false);
   const inputRef = useRef(null);
 
   const handleFiles = useCallback(async (files) => {
@@ -63,7 +121,6 @@ function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample,
 
   const hasLibrary = library && library.length > 0;
 
-  // 페이지 전체에 드래그 가능
   const onPageDragOver = useCallback((e) => { e.preventDefault(); setDragging(true); }, []);
   const onPageDragLeave = useCallback((e) => {
     if (e.relatedTarget === null || !e.currentTarget.contains(e.relatedTarget)) setDragging(false);
@@ -76,7 +133,7 @@ function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample,
       onDragLeave={onPageDragLeave}
       onDrop={onDrop}
     >
-      {/* 배경 — 따뜻한 방 */}
+      {/* 배경 장식 */}
       <div className="scene-window" aria-hidden>
         <div className="scene-window-glow" />
         <div className="scene-floating sf-1">📖</div>
@@ -85,7 +142,7 @@ function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample,
         <div className="scene-floating sf-4">🍃</div>
       </div>
 
-      {/* 헤로 */}
+      {/* 헤더 */}
       <header className="scene-hero">
         <span className="scene-hello">📚 우리 반 그림책 도서관</span>
         <h1 className="scene-title">
@@ -98,13 +155,11 @@ function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample,
         </p>
       </header>
 
-      {/* 메인 책장 */}
+      {/* 책장 */}
       <section className="bookshelf-stage">
         <div className="bookshelf">
           <div className="bookshelf-row">
             <ShelfBooks library={library} onOpen={onOpenBook} onRemove={onRemoveBook} />
-
-            {/* 드롭 슬롯 — 항상 책장 끝에 */}
             <div
               className={`shelf-slot ${dragging ? 'is-active' : ''}`}
               onClick={() => inputRef.current?.click()}
@@ -114,15 +169,10 @@ function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample,
             >
               <div className="shelf-slot-inside">
                 <span className="shelf-slot-plus">＋</span>
-                <span className="shelf-slot-text">
-                  {dragging ? '여기에 놓으세요!' : '책 꽂기'}
-                </span>
-                <span className="shelf-slot-hint">
-                  {hasLibrary ? '드래그 또는 클릭' : 'JSON 파일을 끌어다 놓거나 클릭'}
-                </span>
+                <span className="shelf-slot-text">{dragging ? '여기에 놓으세요!' : '책 꽂기'}</span>
+                <span className="shelf-slot-hint">{hasLibrary ? '드래그 또는 클릭' : 'JSON 파일을 끌어다 놓거나 클릭'}</span>
               </div>
             </div>
-
             <input
               ref={inputRef}
               type="file"
@@ -136,7 +186,6 @@ function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample,
           <div className="bookshelf-shadow" aria-hidden />
         </div>
 
-        {/* 빈 책장일 때 가이드 */}
         {!hasLibrary && (
           <div className="empty-hint">
             <span className="empty-hint-arrow">↑</span>
@@ -144,37 +193,47 @@ function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample,
           </div>
         )}
 
-        {/* 액션 버튼 */}
-        <div className="scene-actions">
-          <button className="btn primary" onClick={onLoadSample}>
-            ✨ 샘플 그림책 펼쳐보기
+        {/* 메인 액션 카드 */}
+        <div className="action-cards">
+          <button className="action-card action-card--sample" onClick={onLoadSample}>
+            <span className="action-card-icon">✨</span>
+            <span className="action-card-label">샘플 그림책</span>
+            <span className="action-card-desc">펼쳐보기</span>
           </button>
-          <a className="btn ghost" href="https://plusiam.github.io/picturebook-storyboard/" target="_blank" rel="noreferrer">
-            ✏️ 스토리보드 만들러 가기
+          <a
+            className="action-card action-card--make"
+            href="https://plusiam.github.io/picturebook-storyboard/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <span className="action-card-icon">✏️</span>
+            <span className="action-card-label">스토리보드</span>
+            <span className="action-card-desc">만들러 가기</span>
           </a>
+          <button className="action-card action-card--help" onClick={() => setShowHowTo(true)}>
+            <span className="action-card-icon">❓</span>
+            <span className="action-card-label">사용법</span>
+            <span className="action-card-desc">도움말 보기</span>
+          </button>
         </div>
 
-        {/* 책장 관리 버튼 — 책이 1권 이상일 때만 표시 */}
-        {library && library.length > 0 && (
-          <div className="scene-actions shelf-actions">
-            <button className="btn ghost" onClick={() => {
-              library.forEach((book) => downloadJSON(book, safeFilename(book)));
-            }}>
-              💾 책장 전체 내보내기 ({library.length}권)
+        {/* 책장 관리 */}
+        {hasLibrary && (
+          <div className="shelf-mgmt">
+            <button className="shelf-mgmt-btn" onClick={() => library.forEach((b) => downloadJSON(b, safeFilename(b)))}>
+              <span>💾</span> 전체 내보내기 <em>({library.length}권)</em>
             </button>
             {!confirmClear ? (
-              <button className="btn danger-ghost" onClick={() => setConfirmClear(true)}>
-                🗑 책장 초기화
+              <button className="shelf-mgmt-btn shelf-mgmt-btn--danger" onClick={() => setConfirmClear(true)}>
+                <span>🗑</span> 책장 초기화
               </button>
             ) : (
               <div className="confirm-clear">
                 <span>정말 모두 지울까요?</span>
-                <button className="btn danger" onClick={() => { onClearLibrary(); setConfirmClear(false); }}>
+                <button className="shelf-mgmt-btn shelf-mgmt-btn--danger-solid" onClick={() => { onClearLibrary(); setConfirmClear(false); }}>
                   네, 지울게요
                 </button>
-                <button className="btn ghost" onClick={() => setConfirmClear(false)}>
-                  취소
-                </button>
+                <button className="shelf-mgmt-btn" onClick={() => setConfirmClear(false)}>취소</button>
               </div>
             )}
           </div>
@@ -183,7 +242,7 @@ function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample,
         {error && <div className="error-message">{error}</div>}
       </section>
 
-      {/* 라이브러리 카운터 + 특징 */}
+      {/* 푸터 */}
       <footer className="scene-footer">
         {hasLibrary && (
           <p className="scene-counter">
@@ -197,6 +256,9 @@ function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample,
           <span className="scene-feature">📱 폰·태블릿·PC</span>
           <span className="scene-feature">🖨 PDF 인쇄</span>
         </div>
+        <div className="scene-credit">
+          만든이 · <strong>룰루랄라 한기쌤</strong>
+        </div>
       </footer>
 
       {/* 드래그 오버레이 */}
@@ -208,6 +270,9 @@ function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample,
           </div>
         </div>
       )}
+
+      {/* 사용법 모달 */}
+      {showHowTo && <HowToModal onClose={() => setShowHowTo(false)} />}
     </div>
   );
 }
@@ -231,7 +296,6 @@ function BookSpine({ book, onClick, onRemove, index }) {
   const hasImg = cover && typeof cover.drawing === 'string' && cover.drawing.startsWith('data:image');
   const seed = (s.name || s.title || `x${index}`).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
 
-  // 책등 색상 — 학생 이름 시드 기반
   const palettes = [
     { bg: '#d97757', accent: '#a85a3e' },
     { bg: '#7ba07a', accent: '#557a55' },
@@ -245,23 +309,14 @@ function BookSpine({ book, onClick, onRemove, index }) {
     { bg: '#6e9bb8', accent: '#4a7591' },
   ];
   const c = palettes[seed % palettes.length];
-
-  // 책 두께 약간씩 다르게
   const widths = [44, 48, 52, 46, 50];
   const width = widths[seed % widths.length];
-
-  // 약간의 기울기
   const tilt = (seed % 5 === 0) ? -1.5 : (seed % 7 === 0 ? 1.2 : 0);
 
   return (
     <div
       className="book-spine"
-      style={{
-        '--spine-bg': c.bg,
-        '--spine-accent': c.accent,
-        width: `${width}px`,
-        transform: `rotate(${tilt}deg)`,
-      }}
+      style={{ '--spine-bg': c.bg, '--spine-accent': c.accent, width: `${width}px`, transform: `rotate(${tilt}deg)` }}
       onClick={onClick}
       role="button"
       tabIndex={0}
