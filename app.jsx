@@ -298,35 +298,78 @@ function App() {
   );
 }
 
-/* ===== 인쇄용 ===== */
-function PrintLayout({ book }) {
+/* ===== 인쇄용 (A4 가로 2면 책형) ===== */
+function PrintHalf({ page, book }) {
+  if (!page) return <div className="print-half empty" />;
+  const p = page;
+  if (p.type === 'cover') {
+    return (
+      <div className="print-half">
+        <div className="ph-title">{book.student?.title}</div>
+        {book.student?.protagonist && (
+          <div className="ph-subtitle">주인공 · {book.student.protagonist}</div>
+        )}
+        {p.drawing && <img src={p.drawing} alt="" />}
+        <div className="ph-author">글·그림 {book.student?.name}</div>
+      </div>
+    );
+  }
+  if (p.type === 'author') {
+    return (
+      <div className="print-half">
+        <div className="ph-heading">작가의 말</div>
+        <div className="ph-subtitle">{book.author?.name || book.student?.name}</div>
+        {book.author?.message && <div className="ph-msg">{book.author.message}</div>}
+        {book.author?.dedicationTo && (
+          <div className="ph-dedicate">— {book.author.dedicationTo}에게 —</div>
+        )}
+      </div>
+    );
+  }
   return (
-    <div className="print-only" style={{ display: 'none' }}>
-      {book.pages.map((p, i) => (
-        <div key={i} className="print-page" style={{ width: '100%', aspectRatio: '8/10', padding: 24, background: 'white', color: '#222', breakAfter: 'page' }}>
-          {p.type === 'cover' && (
-            <div style={{ textAlign: 'center' }}>
-              <h1 style={{ fontSize: 36, marginBottom: 8 }}>{book.student?.title}</h1>
-              <p style={{ fontSize: 14, color: '#666' }}>주인공 · {book.student?.protagonist}</p>
-              {p.drawing && <img src={p.drawing} style={{ width: '70%', margin: '24px auto', display: 'block', borderRadius: 16 }} />}
-              <p style={{ marginTop: 24 }}>글·그림 {book.student?.name}</p>
-            </div>
-          )}
-          {p.type !== 'cover' && p.type !== 'author' && (
-            <div>
-              {p.prompt && <p style={{ color: '#a55', fontSize: 18 }}>{p.prompt}</p>}
-              {p.drawing && <img src={p.drawing} style={{ width: '100%', maxHeight: '60%', objectFit: 'contain', margin: '12px 0' }} />}
-              <p style={{ whiteSpace: 'pre-wrap', fontSize: 14, lineHeight: 1.7 }}>{p.text}</p>
-            </div>
-          )}
-          {p.type === 'author' && (
-            <div style={{ textAlign: 'center' }}>
-              <h2>작가의 말</h2>
-              <p>{book.author?.name || book.student?.name}</p>
-              {book.author?.message && <p style={{ whiteSpace: 'pre-wrap' }}>{book.author.message}</p>}
-              {book.author?.dedicationTo && <p>— {book.author.dedicationTo}에게 —</p>}
-            </div>
-          )}
+    <div className="print-half">
+      {p.prompt && <div className="ph-prompt">{p.prompt}</div>}
+      {p.drawing && <img src={p.drawing} alt="" />}
+      {p.text && <div className="ph-text">{p.text}</div>}
+    </div>
+  );
+}
+
+function PrintLayout({ book }) {
+  // 페이지를 시트(A4 가로 1장 = 2면)로 묶음
+  // 표지: 왼쪽 빈 면 + 오른쪽 표지
+  // 본문: 2장씩 좌우 페어
+  // 작가의 말: 왼쪽 배치 + 오른쪽 빈 면
+  const pages = book.pages || [];
+  const sheets = [];
+
+  let i = 0;
+  while (i < pages.length) {
+    const p = pages[i];
+    if (p.type === 'cover') {
+      sheets.push([null, p]);
+      i++;
+    } else if (p.type === 'author') {
+      sheets.push([p, null]);
+      i++;
+    } else {
+      const next = pages[i + 1];
+      if (next && next.type !== 'cover' && next.type !== 'author') {
+        sheets.push([p, next]);
+        i += 2;
+      } else {
+        sheets.push([p, null]);
+        i++;
+      }
+    }
+  }
+
+  return (
+    <div className="print-only">
+      {sheets.map((pair, si) => (
+        <div key={si} className="print-sheet">
+          <PrintHalf page={pair[0]} book={book} />
+          <PrintHalf page={pair[1]} book={book} />
         </div>
       ))}
     </div>
