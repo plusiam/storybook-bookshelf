@@ -146,11 +146,21 @@ function bookKeyFromData(book) {
   return `${s.class || ''}-${s.name || ''}-${s.title || ''}`;
 }
 
+async function clearLibraryIDB() {
+  try {
+    await idbClear(STORE_LIBRARY);
+    await idbClear(STORE_POSITIONS);
+  } catch (e) {
+    console.warn('[IDB] 초기화 실패:', e);
+  }
+}
+
 window.PB_IDB = {
   loadLibrary: loadLibraryIDB,
   saveLibrary: saveLibraryIDB,
   loadPositions: loadPositionsIDB,
   savePosition: savePositionIDB,
   migrate: migrateFromLocalStorage,
+  clearLibrary: clearLibraryIDB,
   bookKey: bookKeyFromData,
 };

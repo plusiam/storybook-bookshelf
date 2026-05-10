@@ -537,6 +537,58 @@ html, body {
   backdrop-filter: blur(4px);
 }
 
+/* 책등 내보내기 버튼 */
+.book-spine-export {
+  position: absolute;
+  bottom: -10px;
+  right: -10px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid white;
+  background: rgba(58, 52, 44, 0.75);
+  color: white;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 6;
+}
+.book-spine:hover .book-spine-export { opacity: 1; }
+
+/* 책장 관리 버튼 영역 */
+.shelf-actions {
+  margin-top: 12px;
+  gap: 10px;
+}
+
+.btn.danger-ghost {
+  background: transparent;
+  border: 1.5px solid rgba(200, 60, 60, 0.4);
+  color: #b03030;
+}
+.btn.danger-ghost:hover {
+  background: rgba(200, 60, 60, 0.08);
+  border-color: rgba(200, 60, 60, 0.7);
+}
+.btn.danger {
+  background: #c03030;
+  color: white;
+  border: none;
+}
+.btn.danger:hover { background: #a02020; }
+
+.confirm-clear {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+}
+
 /* 에러 */
 .error-message {
   margin: 16px auto 0;

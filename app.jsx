@@ -138,6 +138,12 @@ function App() {
     setIntroDone(false);
   }, []);
 
+  const clearLibrary = useCallback(async () => {
+    await PB_IDB.clearLibrary();
+    positionsRef.current = {};
+    setLibrary([]);
+  }, []);
+
   const printPDF = useCallback(() => { window.print(); }, []);
 
   if (!book) {
@@ -148,6 +154,7 @@ function App() {
         onOpenBook={openFromLibrary}
         onRemoveBook={removeFromLibrary}
         onLoadSample={loadSample}
+        onClearLibrary={clearLibrary}
       />
     );
   }

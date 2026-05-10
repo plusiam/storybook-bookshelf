@@ -1,13 +1,31 @@
-/* global React */
+/* global React, PB_IDB */
 const { useState, useRef, useCallback, useMemo } = React;
 
 /* ======================================================
    업로드 화면 — 그림책 책장 분위기
    ====================================================== */
 
-function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample }) {
+function downloadJSON(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function safeFilename(book) {
+  const s = book?.student || {};
+  const name = (s.name || '작가').replace(/[\\/:*?"<>|]/g, '_');
+  const title = (s.title || '그림책').replace(/[\\/:*?"<>|]/g, '_');
+  return `${name}_${title}.json`;
+}
+
+function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample, onClearLibrary }) {
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState(null);
+  const [confirmClear, setConfirmClear] = useState(false);
   const inputRef = useRef(null);
 
   const handleFiles = useCallback(async (files) => {
@@ -136,6 +154,32 @@ function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample 
           </a>
         </div>
 
+        {/* 책장 관리 버튼 — 책이 1권 이상일 때만 표시 */}
+        {library && library.length > 0 && (
+          <div className="scene-actions shelf-actions">
+            <button className="btn ghost" onClick={() => {
+              library.forEach((book) => downloadJSON(book, safeFilename(book)));
+            }}>
+              💾 책장 전체 내보내기 ({library.length}권)
+            </button>
+            {!confirmClear ? (
+              <button className="btn danger-ghost" onClick={() => setConfirmClear(true)}>
+                🗑 책장 초기화
+              </button>
+            ) : (
+              <div className="confirm-clear">
+                <span>정말 모두 지울까요?</span>
+                <button className="btn danger" onClick={() => { onClearLibrary(); setConfirmClear(false); }}>
+                  네, 지울게요
+                </button>
+                <button className="btn ghost" onClick={() => setConfirmClear(false)}>
+                  취소
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {error && <div className="error-message">{error}</div>}
       </section>
 
@@ -234,6 +278,12 @@ function BookSpine({ book, onClick, onRemove, index }) {
           </div>
         )}
       </div>
+      <button
+        className="book-spine-export"
+        onClick={(e) => { e.stopPropagation(); downloadJSON(book, safeFilename(book)); }}
+        aria-label="JSON으로 내보내기"
+        title="JSON으로 저장"
+      >↓</button>
       <button
         className="book-spine-remove"
         onClick={(e) => { e.stopPropagation(); onRemove(); }}
