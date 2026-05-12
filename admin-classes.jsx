@@ -1,11 +1,9 @@
-// 교사 어드민 — 학급 관리 (목록·만들기·코드 재발급·잠금 해제·삭제)
+// 교사 어드민 — 학급 관리 v3 (두 코드 분리: view_code 열람용 / upload_code 학생 업로드용)
 /* global React, PB */
 const { useState: useStateCls, useEffect: useEffectCls, useCallback: useCallbackCls } = React;
 
 /* ─── 헬퍼 ─────────────────────────────────────────────────────────── */
 
-// 현재 시점으로부터 합리적인 디폴트 학년도 추정
-// 한국 학기제: 3~7월 = 1학기, 8월~익년 2월 = 2학기
 function defaultSchoolYear() {
   const d = new Date();
   const year = d.getFullYear();
@@ -28,13 +26,25 @@ function ageInDays(createdAt) {
   return Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000);
 }
 
-/* ─── 학급 만들기 폼 ──────────────────────────────────────────────── */
+async function copyToClipboard(text, successMsg) {
+  try {
+    await navigator.clipboard.writeText(text);
+    window.alert(successMsg);
+  } catch (e) {
+    window.prompt('아래 내용을 복사해서 사용해 주세요', text);
+  }
+}
+
+function siteOrigin() {
+  return `${window.location.origin}${window.location.pathname}`;
+}
+
+/* ─── 학급 만들기 폼 (코드는 자동 발급, 수동 입력 폐기) ────────── */
 
 function CreateClassForm({ onCreated, onCancel }) {
   const [schoolYear, setSchoolYear] = useStateCls(defaultSchoolYear);
   const [grade, setGrade] = useStateCls(5);
   const [classNo, setClassNo] = useStateCls(1);
-  const [classCode, setClassCode] = useStateCls('');
   const [displayName, setDisplayName] = useStateCls('');
   const [submitting, setSubmitting] = useStateCls(false);
   const [error, setError] = useStateCls(null);
@@ -48,7 +58,6 @@ function CreateClassForm({ onCreated, onCancel }) {
         school_year: schoolYear,
         grade,
         class_no: classNo,
-        class_code: classCode,
         display_name: displayName,
       });
       onCreated();
@@ -101,20 +110,6 @@ function CreateClassForm({ onCreated, onCancel }) {
             required
           />
         </label>
-
-        <label className="class-create-field">
-          <span>학급 코드 (선택)</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]{4}"
-            maxLength={4}
-            value={classCode}
-            onChange={(e) => setClassCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
-            placeholder="비우면 자동"
-            disabled={submitting}
-          />
-        </label>
       </div>
 
       <label className="class-create-field class-create-field--full">
@@ -128,6 +123,10 @@ function CreateClassForm({ onCreated, onCancel }) {
           disabled={submitting}
         />
       </label>
+
+      <p className="class-create-hint">
+        📌 학급을 만들면 <strong>열람 코드(4자리)</strong>와 <strong>업로드 코드(6자리)</strong>가 자동으로 발급됩니다.
+      </p>
 
       {error && <p className="class-create-error">{error}</p>}
 
@@ -145,8 +144,14 @@ function CreateClassForm({ onCreated, onCancel }) {
 
 /* ─── 학급 카드 ───────────────────────────────────────────────────── */
 
-function ClassCard({ cls, bookCount, onOpen, onCopyAnnouncement, onRegenerate, onUnlock, onDelete }) {
-  const locked = cls.locked_until && new Date(cls.locked_until) > new Date();
+function ClassCard({
+  cls, bookCount,
+  onOpen,
+  onCopyViewAnnouncement, onCopyUploadAnnouncement,
+  onRegenerateView, onRegenerateUpload,
+  onUnlockUpload, onDelete,
+}) {
+  const locked = cls.upload_locked && new Date(cls.upload_locked) > new Date();
   const aged = ageInDays(cls.created_at) >= 365;
   const stop = (e) => e.stopPropagation();
 
@@ -159,16 +164,27 @@ function ClassCard({ cls, bookCount, onOpen, onCopyAnnouncement, onRegenerate, o
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen?.(); }
       }}
-      title="클릭해서 학급 안의 책 관리"
+      title="클릭해서 학급 안의 책 보기"
     >
       <div className="class-card-code-row">
-        <span className="class-card-code">{cls.class_code}</span>
+        <div className="class-card-code-block">
+          <span className="class-card-code-label">열람</span>
+          <span className="class-card-code class-card-code--view">{cls.view_code}</span>
+        </div>
         {aged && (
           <span className="class-card-aged" title="만든 지 1년이 지났어요">
             ⚠️ 1년 경과
           </span>
         )}
       </div>
+
+      <div className="class-card-code-row class-card-code-row--upload">
+        <div className="class-card-code-block">
+          <span className="class-card-code-label">업로드</span>
+          <span className="class-card-code class-card-code--upload">{cls.upload_code}</span>
+        </div>
+      </div>
+
       <h3 className="class-card-title">{cls.display_name}</h3>
       <p className="class-card-meta">
         {cls.school_year} · {cls.grade}학년 {cls.class_no}반
@@ -177,8 +193,8 @@ function ClassCard({ cls, bookCount, onOpen, onCopyAnnouncement, onRegenerate, o
 
       {locked && (
         <div className="class-card-locked-banner" onClick={stop}>
-          <span>🔒 잠금 중 · {formatRemaining(cls.locked_until)}</span>
-          <button type="button" className="btn btn-sm" onClick={onUnlock}>
+          <span>🔒 업로드 잠금 · {formatRemaining(cls.upload_locked)}</span>
+          <button type="button" className="btn btn-sm" onClick={onUnlockUpload}>
             지금 풀기
           </button>
         </div>
@@ -187,16 +203,41 @@ function ClassCard({ cls, bookCount, onOpen, onCopyAnnouncement, onRegenerate, o
       <div className="class-card-actions" onClick={stop}>
         <button
           type="button"
-          className="btn btn-sm class-card-announce"
-          onClick={onCopyAnnouncement}
-          title="학부모 안내 메시지를 클립보드에 복사"
+          className="btn btn-sm class-card-announce class-card-announce--view"
+          onClick={onCopyViewAnnouncement}
+          title="누구나 공유 가능한 열람 안내문 (SNS·블로그 안전)"
         >
-          📋 안내문
+          📢 열람 안내
         </button>
-        <button type="button" className="btn btn-sm" onClick={onRegenerate}>
-          🔁 코드 재발급
+        <button
+          type="button"
+          className="btn btn-sm class-card-announce class-card-announce--upload"
+          onClick={onCopyUploadAnnouncement}
+          title="학생에게만 보내는 업로드 안내문"
+        >
+          ✍️ 업로드 안내
         </button>
-        <button type="button" className="btn btn-sm class-card-delete" onClick={onDelete}>
+        <button
+          type="button"
+          className="btn btn-sm"
+          onClick={onRegenerateView}
+          title="열람 코드만 새로 발급"
+        >
+          🔁 열람
+        </button>
+        <button
+          type="button"
+          className="btn btn-sm"
+          onClick={onRegenerateUpload}
+          title="업로드 코드만 새로 발급 (잠금도 함께 해제)"
+        >
+          🔁 업로드
+        </button>
+        <button
+          type="button"
+          className="btn btn-sm class-card-delete"
+          onClick={onDelete}
+        >
           🗑 삭제
         </button>
       </div>
@@ -204,7 +245,7 @@ function ClassCard({ cls, bookCount, onOpen, onCopyAnnouncement, onRegenerate, o
   );
 }
 
-/* ─── 메인 — 학급 어드민 ─────────────────────────────────────────── */
+/* ─── 메인 ────────────────────────────────────────────────────────── */
 
 function ClassesAdmin({ onSelectClass }) {
   const [classes, setClasses] = useStateCls([]);
@@ -234,52 +275,75 @@ function ClassesAdmin({ onSelectClass }) {
 
   useEffectCls(() => { reload(); }, [reload]);
 
-  const handleRegenerate = async (cls) => {
+  // ── 안내문 두 종류 ────────────────────────────────────────────
+  const handleCopyViewAnnouncement = (cls) => {
+    const url = `${siteOrigin()}#/c/${cls.view_code}?y=${encodeURIComponent(cls.school_year)}`;
+    const text =
+      `📖 ${cls.display_name} — 작품집 안내\n\n` +
+      `우리 반 학생 작가들의 그림책 작품집을 함께 보실 수 있어요.\n\n` +
+      `📲 접속 주소: ${url}\n` +
+      `🔑 열람 코드: ${cls.view_code} (4자리 숫자)\n` +
+      `🏫 학년도: ${cls.school_year}\n\n` +
+      `코드를 알고 계신 분은 누구나 보실 수 있습니다. SNS/블로그/가정통신문에 공유 가능합니다.\n` +
+      `* 작품은 학생 필명으로 표시됩니다.\n\n` +
+      `— 담임 드림`;
+    copyToClipboard(text, '열람 안내문이 클립보드에 복사되었어요.\n가정통신문이나 학급 메신저에 붙여넣어 주세요.');
+  };
+
+  const handleCopyUploadAnnouncement = (cls) => {
+    const url = `${siteOrigin()}#/upload?y=${encodeURIComponent(cls.school_year)}`;
+    const text =
+      `✍️ ${cls.display_name} — 작품 업로드 안내 (학생용)\n\n` +
+      `완성한 그림책 JSON 파일을 직접 올려 작가로 등록할 수 있어요.\n\n` +
+      `📲 접속 주소: ${url}\n` +
+      `🔐 업로드 코드: ${cls.upload_code} (6자리, 학생에게만 안내)\n` +
+      `🏫 학년도: ${cls.school_year}\n\n` +
+      `업로드 흐름\n` +
+      `  1) 위 주소로 접속\n` +
+      `  2) 업로드 코드와 학년도 입력\n` +
+      `  3) 자신의 필명(별명) 입력 — 실명 사용 금지\n` +
+      `  4) JSON 파일 드래그·드롭 → 업로드\n` +
+      `  5) 공유 링크가 생기면 학급 작품집에서도 자동으로 보입니다\n\n` +
+      `⚠️ 업로드 코드는 우리 반 학생에게만 알려야 합니다.\n` +
+      `잘못된 입력이 10회 누적되면 코드가 일시 잠깁니다.\n\n` +
+      `— 담임 드림`;
+    copyToClipboard(text, '학생용 업로드 안내문이 클립보드에 복사되었어요.\n학급 메신저(학생 그룹)에만 공유해 주세요.');
+  };
+
+  const handleRegenerateView = async (cls) => {
     const ok = window.confirm(
-      `'${cls.display_name}'의 학급 코드를 새로 발급할까요?\n` +
-      `이전 코드(${cls.class_code})는 더 이상 사용할 수 없습니다.`
+      `'${cls.display_name}'의 열람 코드를 새로 발급할까요?\n` +
+      `이전 코드(${cls.view_code})로는 더 이상 접속할 수 없습니다.`
     );
     if (!ok) return;
     try {
-      await PB.regenerateClassCode(cls.id);
+      await PB.regenerateViewCode(cls.id);
       await reload();
     } catch (e) {
       window.alert(e?.message || '재발급에 실패했어요');
     }
   };
 
-  const handleUnlock = async (cls) => {
+  const handleRegenerateUpload = async (cls) => {
+    const ok = window.confirm(
+      `'${cls.display_name}'의 업로드 코드를 새로 발급할까요?\n` +
+      `이전 코드(${cls.upload_code})는 사용 불가 + 잠금 카운터도 초기화됩니다.`
+    );
+    if (!ok) return;
     try {
-      await PB.unlockClass(cls.id);
+      await PB.regenerateUploadCode(cls.id);
       await reload();
     } catch (e) {
-      window.alert(e?.message || '잠금 해제에 실패했어요');
+      window.alert(e?.message || '재발급에 실패했어요');
     }
   };
 
-  const handleCopyAnnouncement = async (cls) => {
-    // 현재 사이트의 family 진입 URL을 자동으로 생성합니다.
-    // 어드민이 보고 있는 도메인 = 학부모도 같은 도메인이라는 가정.
-    const url = `${window.location.origin}${window.location.pathname}#/family`;
-    const text =
-      `📖 ${cls.display_name} — 그림책 도서관 안내\n\n` +
-      `학부모님께\n` +
-      `우리 반에서 만든 그림책을 가정에서도 함께 보실 수 있도록 안내드립니다.\n\n` +
-      `📲 접속 주소: ${url}\n` +
-      `🔑 학급 코드: ${cls.class_code} (4자리 숫자)\n` +
-      `🏫 학년도: ${cls.school_year}\n` +
-      `🎓 학년·반: ${cls.grade}학년 ${cls.class_no}반\n` +
-      `👤 입력: 자녀 본인의 이름 (실명)\n\n` +
-      `위 5가지를 모두 정확히 입력하셔야 자녀의 작품을 볼 수 있어요.\n` +
-      `잘못된 입력이 반복되면 학급 코드가 1시간 잠깁니다.\n\n` +
-      `— 담임 드림`;
-
+  const handleUnlockUpload = async (cls) => {
     try {
-      await navigator.clipboard.writeText(text);
-      window.alert('학부모 안내문이 클립보드에 복사되었어요.\n가정통신문이나 학급 메신저에 붙여넣어 주세요.');
+      await PB.unlockUpload(cls.id);
+      await reload();
     } catch (e) {
-      // 클립보드 권한이 없을 때 — prompt로 폴백
-      window.prompt('아래 내용을 복사해서 사용해 주세요', text);
+      window.alert(e?.message || '잠금 해제에 실패했어요');
     }
   };
 
@@ -305,7 +369,7 @@ function ClassesAdmin({ onSelectClass }) {
         <div>
           <h2 className="classes-admin-title">학급 관리</h2>
           <p className="classes-admin-sub">
-            학년도별로 학급을 만들고 4자리 코드로 학부모에게 안내하세요.
+            학년도별 학급을 만들고 두 종류 코드(<strong>열람</strong>·<strong>업로드</strong>)로 안내하세요.
           </p>
         </div>
         {!showCreate && (
@@ -355,9 +419,11 @@ function ClassesAdmin({ onSelectClass }) {
               cls={c}
               bookCount={counts[c.id] || 0}
               onOpen={() => onSelectClass?.(c)}
-              onCopyAnnouncement={() => handleCopyAnnouncement(c)}
-              onRegenerate={() => handleRegenerate(c)}
-              onUnlock={() => handleUnlock(c)}
+              onCopyViewAnnouncement={() => handleCopyViewAnnouncement(c)}
+              onCopyUploadAnnouncement={() => handleCopyUploadAnnouncement(c)}
+              onRegenerateView={() => handleRegenerateView(c)}
+              onRegenerateUpload={() => handleRegenerateUpload(c)}
+              onUnlockUpload={() => handleUnlockUpload(c)}
               onDelete={() => handleDelete(c)}
             />
           ))}

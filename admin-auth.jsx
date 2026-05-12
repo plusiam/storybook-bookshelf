@@ -1,5 +1,5 @@
 // 교사 어드민 진입 화면 — Supabase Auth 이메일 OTP 로그인 + 학급/책 관리 셸
-/* global React, PB */
+/* global React, PB, ClassesAdmin, BooksAdmin */
 const { useState: useStateAuth, useEffect: useEffectAuth, useCallback: useCallbackAuth } = React;
 
 /* ======================================================
@@ -141,6 +141,7 @@ function TeacherLogin({ onSession }) {
 
 function AdminShell({ session, onSignOut, onExitAdmin }) {
   const email = session?.user?.email || '';
+  const [selectedClass, setSelectedClass] = useStateAuth(null);
 
   const handleSignOut = useCallbackAuth(async () => {
     await PB.signOut();
@@ -165,14 +166,11 @@ function AdminShell({ session, onSignOut, onExitAdmin }) {
         </div>
       </header>
 
-      <section className="admin-shell-empty">
-        <div className="admin-shell-empty-icon">🚧</div>
-        <h2>학급 관리 화면 재설계 중</h2>
-        <p>
-          학급당 두 종류 코드(열람용 4자리 / 업로드용 6자리)와 학생 직접 업로드 흐름에 맞춰
-          어드민 화면이 곧 갱신됩니다 (Phase 8).
-        </p>
-      </section>
+      {selectedClass ? (
+        <BooksAdmin cls={selectedClass} onBack={() => setSelectedClass(null)} />
+      ) : (
+        <ClassesAdmin onSelectClass={setSelectedClass} />
+      )}
     </div>
   );
 }
