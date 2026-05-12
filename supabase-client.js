@@ -15,6 +15,14 @@
 //   PB.signOut()                                  → undefined
 //   PB.getSession()                               → session 또는 null
 //   PB.onAuthStateChange(cb)                      → unsubscribe 함수
+//   ─── 학급 관리 (Phase 3a — 교사 어드민) ───
+//   PB.listClasses()                              → classes row[] (내가 만든 학급 목록)
+//   PB.createClass({school_year, grade, class_no, display_name, class_code?})
+//                                                 → 새 classes row (코드 미지정 시 자동 생성)
+//   PB.deleteClass(id)                            → undefined (책도 cascade 삭제)
+//   PB.regenerateClassCode(id)                    → 새 4자리 코드
+//   PB.unlockClass(id)                            → undefined (실패 카운터·잠금 초기화)
+//   PB.countBooksByClass(classIds[])              → { [class_id]: count }
 //   ─── 유틸 ───
 //   PB.generateSlug()                             → 6자 영숫자 (예: 'xK3p9q')
 //   PB.isConfigured()                             → boolean (config.js가 placeholder 아닌지)
@@ -221,6 +229,129 @@
     return () => data.subscription.unsubscribe();
   }
 
+  // ── 학급 관리 (Phase 3a) ───────────────────────────────────────────────
+  // RLS 정책 "teacher manages own classes" 덕분에 anon SELECT는 거부되고
+  // 인증된 교사는 자기 teacher_id 행만 조회·수정·삭제할 수 있습니다.
+
+  function generateClassCode() {
+    // 1000~9999 사이 4자리 숫자
+    const arr = new Uint32Array(1);
+    crypto.getRandomValues(arr);
+    return String(1000 + (arr[0] % 9000));
+  }
+
+  async function listClasses() {
+    if (!sb) throw new Error('Supabase가 설정되지 않았어요');
+    const { data, error } = await sb
+      .from('classes')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message || '학급 목록을 불러오지 못했어요');
+    return data || [];
+  }
+
+  async function createClass(input) {
+    if (!sb) throw new Error('Supabase가 설정되지 않았어요');
+    const { data: u } = await sb.auth.getUser();
+    if (!u?.user) throw new Error('로그인이 필요해요');
+
+    const grade = parseInt(input.grade, 10);
+    const class_no = parseInt(input.class_no, 10);
+    const school_year = (input.school_year || '').trim();
+    const display_name =
+      (input.display_name || '').trim() ||
+      `${grade}학년 ${class_no}반 (${school_year})`;
+
+    if (!school_year) throw new Error('학년도를 입력해 주세요');
+    if (!(grade >= 1 && grade <= 6)) throw new Error('학년은 1~6 사이여야 합니다');
+    if (!(class_no >= 1 && class_no <= 20)) throw new Error('반은 1~20 사이여야 합니다');
+
+    const payload = {
+      teacher_id: u.user.id,
+      school_year, grade, class_no, display_name,
+    };
+
+    const explicitCode = (input.class_code || '').trim();
+    if (explicitCode) {
+      if (!/^[0-9]{4}$/.test(explicitCode)) {
+        throw new Error('학급 코드는 4자리 숫자여야 합니다');
+      }
+      const { data, error } = await sb
+        .from('classes')
+        .insert({ ...payload, class_code: explicitCode })
+        .select()
+        .single();
+      if (error) {
+        if (error.code === '23505') {
+          throw new Error('이 학년도에 같은 코드가 이미 있어요. 다른 코드로 시도해 주세요');
+        }
+        throw new Error(error.message || '학급 생성에 실패했어요');
+      }
+      return data;
+    }
+
+    // 자동 생성 — 5회까지 충돌 재시도
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = generateClassCode();
+      const { data, error } = await sb
+        .from('classes')
+        .insert({ ...payload, class_code: code })
+        .select()
+        .single();
+      if (!error) return data;
+      if (error.code !== '23505') {
+        throw new Error(error.message || '학급 생성에 실패했어요');
+      }
+    }
+    throw new Error('학급 코드 자동 생성에 계속 실패했어요. 직접 입력해 주세요');
+  }
+
+  async function deleteClass(id) {
+    if (!sb) throw new Error('Supabase가 설정되지 않았어요');
+    const { error } = await sb.from('classes').delete().eq('id', id);
+    if (error) throw new Error(error.message || '학급 삭제에 실패했어요');
+  }
+
+  async function regenerateClassCode(id) {
+    if (!sb) throw new Error('Supabase가 설정되지 않았어요');
+    // 새 코드 + 실패 카운터·잠금 초기화 (재발급은 신뢰 회복 의미)
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = generateClassCode();
+      const { error } = await sb
+        .from('classes')
+        .update({ class_code: code, failed_attempts: 0, locked_until: null })
+        .eq('id', id);
+      if (!error) return code;
+      if (error.code !== '23505') {
+        throw new Error(error.message || '코드 재발급에 실패했어요');
+      }
+    }
+    throw new Error('새 코드 생성에 계속 실패했어요. 잠시 후 다시 시도해 주세요');
+  }
+
+  async function unlockClass(id) {
+    if (!sb) throw new Error('Supabase가 설정되지 않았어요');
+    const { error } = await sb
+      .from('classes')
+      .update({ failed_attempts: 0, locked_until: null })
+      .eq('id', id);
+    if (error) throw new Error(error.message || '잠금 해제에 실패했어요');
+  }
+
+  async function countBooksByClass(classIds) {
+    if (!sb || !classIds || classIds.length === 0) return {};
+    const { data, error } = await sb
+      .from('books')
+      .select('class_id')
+      .in('class_id', classIds);
+    if (error) return {};
+    const counts = {};
+    for (const row of data || []) {
+      counts[row.class_id] = (counts[row.class_id] || 0) + 1;
+    }
+    return counts;
+  }
+
   window.PB = {
     uploadBook,
     getBook,
@@ -232,5 +363,11 @@
     signOut,
     getSession,
     onAuthStateChange,
+    listClasses,
+    createClass,
+    deleteClass,
+    regenerateClassCode,
+    unlockClass,
+    countBooksByClass,
   };
 })();

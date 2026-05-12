@@ -1,5 +1,5 @@
-// 교사 어드민 진입 화면 — Supabase Auth 이메일 OTP 로그인 + placeholder 어드민
-/* global React, PB */
+// 교사 어드민 진입 화면 — Supabase Auth 이메일 OTP 로그인 + 학급 관리 셸
+/* global React, PB, ClassesAdmin */
 const { useState: useStateAuth, useEffect: useEffectAuth, useCallback: useCallbackAuth } = React;
 
 /* ======================================================
@@ -165,13 +165,7 @@ function AdminShell({ session, onSignOut, onExitAdmin }) {
         </div>
       </header>
 
-      <section className="admin-shell-empty">
-        <div className="admin-shell-empty-icon">🚧</div>
-        <h2>학급 관리 기능은 곧 추가됩니다</h2>
-        <p>
-          다음 단계에서 학급 만들기 · 학생 작품 업로드 · 공개 범위 토글 기능이 들어갈 예정입니다.
-        </p>
-      </section>
+      <ClassesAdmin />
     </div>
   );
 }
