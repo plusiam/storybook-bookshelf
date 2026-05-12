@@ -1,5 +1,5 @@
-// 교사 어드민 진입 화면 — Supabase Auth 이메일 OTP 로그인 + 학급 관리 셸
-/* global React, PB, ClassesAdmin */
+// 교사 어드민 진입 화면 — Supabase Auth 이메일 OTP 로그인 + 학급/책 관리 셸
+/* global React, PB, ClassesAdmin, BooksAdmin */
 const { useState: useStateAuth, useEffect: useEffectAuth, useCallback: useCallbackAuth } = React;
 
 /* ======================================================
@@ -141,6 +141,7 @@ function TeacherLogin({ onSession }) {
 
 function AdminShell({ session, onSignOut, onExitAdmin }) {
   const email = session?.user?.email || '';
+  const [selectedClass, setSelectedClass] = useStateAuth(null);
 
   const handleSignOut = useCallbackAuth(async () => {
     await PB.signOut();
@@ -165,7 +166,11 @@ function AdminShell({ session, onSignOut, onExitAdmin }) {
         </div>
       </header>
 
-      <ClassesAdmin />
+      {selectedClass ? (
+        <BooksAdmin cls={selectedClass} onBack={() => setSelectedClass(null)} />
+      ) : (
+        <ClassesAdmin onSelectClass={setSelectedClass} />
+      )}
     </div>
   );
 }

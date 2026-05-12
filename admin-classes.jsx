@@ -145,12 +145,22 @@ function CreateClassForm({ onCreated, onCancel }) {
 
 /* ─── 학급 카드 ───────────────────────────────────────────────────── */
 
-function ClassCard({ cls, bookCount, onRegenerate, onUnlock, onDelete }) {
+function ClassCard({ cls, bookCount, onOpen, onRegenerate, onUnlock, onDelete }) {
   const locked = cls.locked_until && new Date(cls.locked_until) > new Date();
   const aged = ageInDays(cls.created_at) >= 365;
+  const stop = (e) => e.stopPropagation();
 
   return (
-    <article className={`class-card${locked ? ' is-locked' : ''}`}>
+    <article
+      className={`class-card${locked ? ' is-locked' : ''} is-clickable`}
+      onClick={onOpen}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen?.(); }
+      }}
+      title="클릭해서 학급 안의 책 관리"
+    >
       <div className="class-card-code-row">
         <span className="class-card-code">{cls.class_code}</span>
         {aged && (
@@ -166,7 +176,7 @@ function ClassCard({ cls, bookCount, onRegenerate, onUnlock, onDelete }) {
       <p className="class-card-count">📚 책 {bookCount}권</p>
 
       {locked && (
-        <div className="class-card-locked-banner">
+        <div className="class-card-locked-banner" onClick={stop}>
           <span>🔒 잠금 중 · {formatRemaining(cls.locked_until)}</span>
           <button type="button" className="btn btn-sm" onClick={onUnlock}>
             지금 풀기
@@ -174,7 +184,7 @@ function ClassCard({ cls, bookCount, onRegenerate, onUnlock, onDelete }) {
         </div>
       )}
 
-      <div className="class-card-actions">
+      <div className="class-card-actions" onClick={stop}>
         <button type="button" className="btn btn-sm" onClick={onRegenerate}>
           🔁 코드 재발급
         </button>
@@ -188,7 +198,7 @@ function ClassCard({ cls, bookCount, onRegenerate, onUnlock, onDelete }) {
 
 /* ─── 메인 — 학급 어드민 ─────────────────────────────────────────── */
 
-function ClassesAdmin() {
+function ClassesAdmin({ onSelectClass }) {
   const [classes, setClasses] = useStateCls([]);
   const [counts, setCounts] = useStateCls({});
   const [loading, setLoading] = useStateCls(true);
@@ -310,6 +320,7 @@ function ClassesAdmin() {
               key={c.id}
               cls={c}
               bookCount={counts[c.id] || 0}
+              onOpen={() => onSelectClass?.(c)}
               onRegenerate={() => handleRegenerate(c)}
               onUnlock={() => handleUnlock(c)}
               onDelete={() => handleDelete(c)}

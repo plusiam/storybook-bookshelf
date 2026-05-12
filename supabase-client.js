@@ -23,6 +23,12 @@
 //   PB.regenerateClassCode(id)                    → 새 4자리 코드
 //   PB.unlockClass(id)                            → undefined (실패 카운터·잠금 초기화)
 //   PB.countBooksByClass(classIds[])              → { [class_id]: count }
+//   ─── 책 관리 (Phase 3b — 교사 어드민) ───
+//   PB.listBooks(classId)                         → books row[] (학급 안)
+//   PB.createBookForClass({class_id, student_name, title, data, visibility})
+//                                                 → 새 books row (이미지는 Storage에 분리 업로드)
+//   PB.updateBookVisibility(id, visibility)       → undefined ('private' | 'class')
+//   PB.deleteBook(id)                             → undefined (Storage 파일도 함께 정리 시도)
 //   ─── 유틸 ───
 //   PB.generateSlug()                             → 6자 영숫자 (예: 'xK3p9q')
 //   PB.isConfigured()                             → boolean (config.js가 placeholder 아닌지)
@@ -68,7 +74,7 @@
     return typeof str === 'string' && str.startsWith('data:image/');
   }
 
-  // 이미지 한 장을 Storage에 업로드하고 공개 URL 반환
+  // 이미지 한 장을 Storage에 업로드하고 공개 URL + 경로를 반환
   async function uploadImage(bookSlug, pageIdx, field, dataURL) {
     const blob = dataURLtoBlob(dataURL);
     const ext = blob.type.split('/')[1] || 'png';
@@ -79,18 +85,21 @@
     });
     if (error) throw new Error(`이미지 업로드 실패: ${error.message}`);
     const { data } = sb.storage.from(BUCKET).getPublicUrl(path);
-    return data.publicUrl;
+    return { url: data.publicUrl, path };
   }
 
-  // 책 데이터에서 base64 이미지를 모두 Storage URL로 교체한 사본 반환
+  // 책 데이터에서 base64 이미지를 모두 Storage URL로 교체한 사본 + 업로드된 경로 배열 반환
+  // 반환: { data: <pages 교체된 책>, paths: <업로드된 storage 경로[]> }
   async function extractAndUploadImages(data, slug) {
-    // 깊은 복사 없이 페이지 배열만 새로 구성 (data URL은 크므로 직접 변환)
+    const paths = [];
     const pages = await Promise.all(
       (data.pages || []).map(async (page, idx) => {
         const p = { ...page };
         if (isDataURL(p.drawing)) {
           try {
-            p.drawing = await uploadImage(slug, idx, 'drawing', p.drawing);
+            const r = await uploadImage(slug, idx, 'drawing', p.drawing);
+            p.drawing = r.url;
+            paths.push(r.path);
           } catch (e) {
             console.warn(`[PB] 페이지 ${idx} 이미지 업로드 실패, base64 유지:`, e.message);
             // 업로드 실패 시 base64 그대로 유지 (폴백)
@@ -99,7 +108,7 @@
         return p;
       })
     );
-    return { ...data, pages };
+    return { data: { ...data, pages }, paths };
   }
 
   // 업로드 검증 — 클라이언트에서 한 번 거름
@@ -130,9 +139,11 @@
       const slug = generateSlug();
 
       // 이미지 분리 업로드 (실패해도 base64 폴백으로 계속)
+      // v1 학생 흐름은 storage_paths를 추적하지 않습니다(Phase 4에서 폐기 예정).
       let uploadData;
       try {
-        uploadData = await extractAndUploadImages(data, slug);
+        const r = await extractAndUploadImages(data, slug);
+        uploadData = r.data;
       } catch (e) {
         console.warn('[PB] 이미지 분리 실패, 원본 데이터 사용:', e.message);
         uploadData = data;
@@ -352,6 +363,106 @@
     return counts;
   }
 
+  // ── 책 관리 (Phase 3b) ────────────────────────────────────────────────
+
+  async function listBooks(classId) {
+    if (!sb) throw new Error('Supabase가 설정되지 않았어요');
+    if (!classId) return [];
+    const { data, error } = await sb
+      .from('books')
+      .select('id, slug, student_name, title, visibility, storage_paths, created_at')
+      .eq('class_id', classId)
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message || '책 목록을 불러오지 못했어요');
+    return data || [];
+  }
+
+  // 학급에 책 업로드 — JSON + 이미지 분리 + INSERT
+  // 슬러그 충돌 시 최대 3회 재시도. 한 책당 storage_paths를 함께 기록해 삭제 시 정리합니다.
+  async function createBookForClass({ class_id, student_name, title, data, visibility }) {
+    if (!sb) throw new Error('Supabase가 설정되지 않았어요');
+    if (!class_id) throw new Error('학급이 선택되지 않았어요');
+
+    const { data: u } = await sb.auth.getUser();
+    if (!u?.user) throw new Error('로그인이 필요해요');
+
+    const cleanName = (student_name || '').trim();
+    if (!cleanName) throw new Error('학생 이름을 입력해 주세요');
+
+    const errMsg = validateBook(data);
+    if (errMsg) throw new Error(errMsg);
+
+    const vis = visibility === 'class' ? 'class' : 'private';
+    const cleanTitle = (title || '').trim() || null;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const slug = generateSlug();
+
+      let payloadData;
+      let paths = [];
+      try {
+        const r = await extractAndUploadImages(data, slug);
+        payloadData = r.data;
+        paths = r.paths;
+      } catch (e) {
+        console.warn('[PB] 이미지 분리 실패, 원본 데이터 사용:', e.message);
+        payloadData = data;
+      }
+
+      const bytes = new Blob([JSON.stringify(payloadData)]).size;
+      const maxBytes = cfg.MAX_BOOK_BYTES || 500 * 1024;
+      if (bytes > maxBytes) {
+        throw new Error(
+          `책이 너무 커요 (${Math.round(bytes / 1024)}KB / 최대 ${Math.round(maxBytes / 1024)}KB). 이미지 화질을 낮춰보세요.`
+        );
+      }
+
+      const { data: inserted, error } = await sb
+        .from('books')
+        .insert({
+          class_id,
+          slug,
+          student_name: cleanName,
+          title: cleanTitle,
+          data: payloadData,
+          visibility: vis,
+          storage_paths: paths,
+          created_by: u.user.id,
+        })
+        .select()
+        .single();
+
+      if (!error) return inserted;
+      // 23505 = unique_violation (slug 충돌). 재시도.
+      if (error.code === '23505') continue;
+      throw new Error(error.message || '책 업로드에 실패했어요');
+    }
+    throw new Error('슬러그 생성에 계속 실패했어요. 잠시 후 다시 시도해 주세요');
+  }
+
+  async function updateBookVisibility(id, visibility) {
+    if (!sb) throw new Error('Supabase가 설정되지 않았어요');
+    const vis = visibility === 'class' ? 'class' : 'private';
+    const { error } = await sb.from('books').update({ visibility: vis }).eq('id', id);
+    if (error) throw new Error(error.message || '공개 범위 변경에 실패했어요');
+  }
+
+  async function deleteBook(id) {
+    if (!sb) throw new Error('Supabase가 설정되지 않았어요');
+    // 책 row의 storage_paths를 먼저 조회 → 가능하면 Storage 파일 정리 → row 삭제
+    const { data: bk } = await sb
+      .from('books')
+      .select('storage_paths')
+      .eq('id', id)
+      .single();
+    const paths = bk?.storage_paths || [];
+    if (paths.length > 0) {
+      try { await sb.storage.from(BUCKET).remove(paths); } catch (_) { /* 정리 실패해도 진행 */ }
+    }
+    const { error } = await sb.from('books').delete().eq('id', id);
+    if (error) throw new Error(error.message || '책 삭제에 실패했어요');
+  }
+
   window.PB = {
     uploadBook,
     getBook,
@@ -369,5 +480,9 @@
     regenerateClassCode,
     unlockClass,
     countBooksByClass,
+    listBooks,
+    createBookForClass,
+    updateBookVisibility,
+    deleteBook,
   };
 })();
