@@ -71,6 +71,7 @@
 - 작품 데이터에 학생 실명을 적지 않도록 사전 지도 필수 — picturebook-storyboard에서 만들 때부터 별명 사용
 - 업로드 코드 외부 유출 시 즉시 재발급 가능 (어드민 **🔁 업로드** 버튼)
 - 학부모 동의서 권장 ([family-consent.md](./family-consent.md))
+- 운영 정책 ([OPERATIONS.md](./OPERATIONS.md)) — 단일 교사 모드 / 회원가입 OFF / SMTP 운영 / 학기 체크리스트
 
 ---
 
