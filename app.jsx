@@ -1,12 +1,14 @@
 /* global React, ReactDOM, UploadScreen, BookViewer, IntroAnimation, normalizeBook,
           ZoomModal, TweaksPanel, useTweaks, TweakSection, TweakRadio, TweakSelect, TweakToggle, TweakButton, TweakSlider,
-          ShareModal, PB, PB_IDB */
+          ShareModal, Gallery, TeacherLogin, AdminShell, PB, PB_IDB */
 const { useState, useEffect, useCallback, useRef } = React;
 
 /* ──────────────────────────────────────────────
    hash 라우팅 — 단순 파서
    #/             → home (책장)
    #/b/:slug      → Supabase에서 책 한 권 펼치기
+   #/g/:code      → 학급 작품집 (v1, Phase 4에서 폐기 예정)
+   #/admin        → 교사 어드민 (Phase 2 신설)
    ────────────────────────────────────────────── */
 function parseRoute() {
   const h = (window.location.hash || '').replace(/^#/, '');
@@ -14,6 +16,7 @@ function parseRoute() {
   if (mBook) return { type: 'book', slug: mBook[1] };
   const mGallery = h.match(/^\/g\/(.+)$/);
   if (mGallery) return { type: 'gallery', classCode: decodeURIComponent(mGallery[1]) };
+  if (/^\/admin\/?$/.test(h)) return { type: 'admin' };
   return { type: 'home' };
 }
 
@@ -66,6 +69,8 @@ function App() {
   const [route, setRoute] = useState(parseRoute);
   const [remoteState, setRemoteState] = useState({ loading: false, error: null });
   const [shareBook, setShareBook] = useState(null);
+  const [session, setSession] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
   const positionsRef = useRef({});
   const { isFS, toggle: toggleFS } = useFullscreen();
 
@@ -86,6 +91,21 @@ function App() {
       positionsRef.current = positions;
       setLibrary(books.map(normalizeBook).filter(Boolean));
     })();
+  }, []);
+
+  // Supabase Auth 세션 — 초기 조회 + 상태 변화 구독
+  useEffect(() => {
+    if (!PB || !PB.isConfigured()) {
+      setAuthReady(true);
+      return;
+    }
+    (async () => {
+      const s = await PB.getSession();
+      setSession(s);
+      setAuthReady(true);
+    })();
+    const unsubscribe = PB.onAuthStateChange((s) => setSession(s));
+    return unsubscribe;
   }, []);
 
   // hash 라우팅 — hashchange(앞으로) + popstate(뒤로가기) 모두 감지
@@ -246,6 +266,31 @@ function App() {
   }, []);
 
   const printPDF = useCallback(() => { window.print(); }, []);
+
+  // #/admin — 교사 어드민 (Auth 가드)
+  if (route.type === 'admin') {
+    if (!authReady) {
+      return (
+        <div className="remote-state">
+          <div className="remote-state-spinner">🔐</div>
+          <p className="remote-state-text">세션 확인 중...</p>
+        </div>
+      );
+    }
+    if (!session) {
+      return <TeacherLogin onSession={(s) => setSession(s)} />;
+    }
+    return (
+      <AdminShell
+        session={session}
+        onSignOut={() => setSession(null)}
+        onExitAdmin={() => {
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+          setRoute({ type: 'home' });
+        }}
+      />
+    );
+  }
 
   // 공유 링크(#/b/:slug)로 들어왔는데 아직 로딩/에러 상태
   if (!book && route.type === 'book') {

@@ -5,9 +5,17 @@
 //   * config.js가 먼저 로드되어 window.PB_CONFIG가 있어야 함
 //
 // 외부 API (window.PB로 노출)
+//   ─── 책 (학생 공유 흐름. Phase 4에서 RPC 기반으로 정리 예정) ───
 //   PB.uploadBook(data, { classCode, nickname }) → { slug }
 //   PB.getBook(slug)                              → book row 또는 null
-//   PB.getClassBooks(classCode)                   → book row 배열 (created_at 내림차순)
+//   PB.getClassBooks(classCode)                   → book row 배열
+//   ─── 인증 (Phase 2 — 교사 OTP) ───
+//   PB.signInWithOtp(email)                       → undefined (이메일 발송)
+//   PB.verifyOtp(email, token)                    → session (성공 시)
+//   PB.signOut()                                  → undefined
+//   PB.getSession()                               → session 또는 null
+//   PB.onAuthStateChange(cb)                      → unsubscribe 함수
+//   ─── 유틸 ───
 //   PB.generateSlug()                             → 6자 영숫자 (예: 'xK3p9q')
 //   PB.isConfigured()                             → boolean (config.js가 placeholder 아닌지)
 
@@ -20,10 +28,9 @@
     cfg.SUPABASE_ANON_KEY.includes('YOUR-ANON');
 
   // Supabase 클라이언트 초기화 (UMD는 window.supabase 글로벌로 노출)
+  // 교사 로그인 세션을 새로고침해도 유지해야 하므로 기본 설정(persistSession=true, autoRefreshToken=true)을 그대로 둡니다.
   const sb = !placeholder && window.supabase
-    ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
-        auth: { persistSession: false, autoRefreshToken: false },
-      })
+    ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY)
     : null;
 
   const BUCKET = 'book-images';
@@ -166,11 +173,64 @@
     return data || [];
   }
 
+  // ── 인증 (Phase 2 — 교사 OTP) ─────────────────────────────────────────────
+  // Supabase Auth의 이메일 OTP는 한 번의 호출로 매직 링크와 6자리 코드를 모두 발송합니다.
+  // 우리는 6자리 코드 입력 방식만 사용합니다 (학교 환경에서 다른 기기로 링크 클릭이 어려운 경우 대비).
+
+  async function signInWithOtp(email) {
+    if (!sb) throw new Error('Supabase가 설정되지 않았어요 (config.js 확인)');
+    const cleaned = (email || '').trim().toLowerCase();
+    if (!cleaned) throw new Error('이메일을 입력해 주세요');
+    const { error } = await sb.auth.signInWithOtp({
+      email: cleaned,
+      options: { shouldCreateUser: true },
+    });
+    if (error) throw new Error(error.message || '이메일 발송에 실패했어요');
+  }
+
+  async function verifyOtp(email, token) {
+    if (!sb) throw new Error('Supabase가 설정되지 않았어요 (config.js 확인)');
+    const cleaned = (email || '').trim().toLowerCase();
+    const code = (token || '').trim();
+    if (!cleaned || !code) throw new Error('이메일과 코드를 모두 입력해 주세요');
+    const { data, error } = await sb.auth.verifyOtp({
+      email: cleaned,
+      token: code,
+      type: 'email',
+    });
+    if (error) throw new Error(error.message || '코드가 맞지 않아요');
+    return data.session;
+  }
+
+  async function signOut() {
+    if (!sb) return;
+    await sb.auth.signOut();
+  }
+
+  async function getSession() {
+    if (!sb) return null;
+    const { data } = await sb.auth.getSession();
+    return data.session;
+  }
+
+  function onAuthStateChange(callback) {
+    if (!sb) return () => {};
+    const { data } = sb.auth.onAuthStateChange((_event, session) => {
+      callback(session);
+    });
+    return () => data.subscription.unsubscribe();
+  }
+
   window.PB = {
     uploadBook,
     getBook,
     getClassBooks,
     generateSlug,
     isConfigured: () => !placeholder && !!sb,
+    signInWithOtp,
+    verifyOtp,
+    signOut,
+    getSession,
+    onAuthStateChange,
   };
 })();

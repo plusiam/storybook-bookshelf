@@ -2804,3 +2804,168 @@ html, body {
   .gallery-prompt-form { flex-direction: column; }
   .gallery-prompt-form .btn { width: 100%; }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   교사 어드민 (Phase 2) — admin-auth.jsx
+   ───────────────────────────────────────────────────────────── */
+
+.admin-auth-scene {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background:
+    radial-gradient(1200px 600px at 30% 0%, rgba(217, 119, 87, 0.10), transparent 60%),
+    var(--bg, #fdf8f3);
+}
+.admin-auth-card {
+  width: 100%;
+  max-width: 380px;
+  padding: 32px 28px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+.admin-auth-header {
+  text-align: center;
+  margin-bottom: 22px;
+}
+.admin-auth-icon { display: block; font-size: 36px; margin-bottom: 8px; }
+.admin-auth-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  margin: 0 0 4px;
+  color: var(--ink, #29261b);
+}
+.admin-auth-sub {
+  font-size: 14px;
+  color: var(--ink-soft, rgba(41, 38, 27, 0.6));
+  margin: 0;
+}
+.admin-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.admin-auth-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft, rgba(41, 38, 27, 0.7));
+}
+.admin-auth-input {
+  height: 44px;
+  padding: 0 14px;
+  font-size: 15px;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  background: #fff;
+  color: inherit;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.admin-auth-input:focus { border-color: var(--accent, #d97757); }
+.admin-auth-input:disabled { background: rgba(0, 0, 0, 0.03); color: rgba(0, 0, 0, 0.5); }
+.admin-auth-code {
+  text-align: center;
+  font-size: 22px;
+  letter-spacing: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.admin-auth-submit {
+  margin-top: 6px;
+  height: 44px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.admin-auth-link {
+  background: transparent;
+  border: 0;
+  color: var(--ink-soft, rgba(41, 38, 27, 0.6));
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.admin-auth-hint {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--ink-soft, rgba(41, 38, 27, 0.55));
+  line-height: 1.55;
+}
+.admin-auth-info {
+  margin-top: 14px;
+  padding: 10px 12px;
+  font-size: 13px;
+  border-radius: 8px;
+  background: rgba(217, 119, 87, 0.08);
+  color: var(--accent-dark, #a85a3e);
+}
+.admin-auth-error {
+  margin-top: 14px;
+  padding: 10px 12px;
+  font-size: 13px;
+  border-radius: 8px;
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+}
+
+/* ── AdminShell (placeholder) ── */
+.admin-shell {
+  min-height: 100vh;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+.admin-shell-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
+}
+.admin-shell-title-block { flex: 1; }
+.admin-shell-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(217, 119, 87, 0.12);
+  color: var(--accent-dark, #a85a3e);
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+.admin-shell-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  margin: 0 0 4px;
+}
+.admin-shell-email {
+  font-size: 13px;
+  color: var(--ink-soft, rgba(41, 38, 27, 0.6));
+  margin: 0;
+}
+.admin-shell-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.admin-shell-signout {
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+}
+.admin-shell-signout:hover { background: rgba(220, 38, 38, 0.14); }
+.admin-shell-empty {
+  padding: 60px 20px;
+  text-align: center;
+  border: 2px dashed rgba(0, 0, 0, 0.12);
+  border-radius: 16px;
+  color: var(--ink-soft, rgba(41, 38, 27, 0.6));
+}
+.admin-shell-empty-icon { font-size: 40px; margin-bottom: 12px; }
+.admin-shell-empty h2 { margin: 0 0 8px; font-size: 18px; color: var(--ink, #29261b); }
+.admin-shell-empty p { margin: 0; font-size: 14px; line-height: 1.6; }
+
+@media (max-width: 720px) {
+  .admin-auth-card { padding: 24px 20px; }
+  .admin-shell { padding: 20px 14px; }
+  .admin-shell-header { flex-direction: column; align-items: stretch; }
+  .admin-shell-actions { justify-content: flex-end; }
+}
