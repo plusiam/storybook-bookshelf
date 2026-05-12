@@ -88,28 +88,34 @@ function App() {
     })();
   }, []);
 
-  // hash 라우팅 — URL 바뀔 때마다 route 갱신
+  // hash 라우팅 — hashchange(앞으로) + popstate(뒤로가기) 모두 감지
   useEffect(() => {
-    const onHash = () => setRoute(parseRoute());
-    window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
+    const sync = () => setRoute(parseRoute());
+    window.addEventListener('hashchange', sync);
+    window.addEventListener('popstate', sync);
+    return () => {
+      window.removeEventListener('hashchange', sync);
+      window.removeEventListener('popstate', sync);
+    };
   }, []);
 
-  // #/b/:slug 로 들어오면 Supabase에서 책 fetch
+  // #/b/:slug 로 들어오면 Supabase에서 책 fetch (AbortController로 중단 처리)
   useEffect(() => {
     if (route.type !== 'book') return;
-    let cancelled = false;
+    const controller = new AbortController();
     setRemoteState({ loading: true, error: null });
+    setBook(null);
     (async () => {
       try {
         if (!PB || !PB.isConfigured()) throw new Error('Supabase 설정이 안 돼 있어요.');
         const row = await PB.getBook(route.slug);
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         if (!row) {
           setRemoteState({ loading: false, error: '책을 찾을 수 없어요. 링크가 만료되었거나 잘못된 주소일 수 있어요.' });
           return;
         }
         const norm = normalizeBook(row.data);
+        if (controller.signal.aborted) return;
         if (!norm) {
           setRemoteState({ loading: false, error: '책 데이터가 깨져 있어요.' });
           return;
@@ -119,10 +125,12 @@ function App() {
         setIntroDone(!t.showIntro);
         setRemoteState({ loading: false, error: null });
       } catch (e) {
-        if (!cancelled) setRemoteState({ loading: false, error: e?.message || '책을 불러오지 못했어요.' });
+        if (!controller.signal.aborted) {
+          setRemoteState({ loading: false, error: e?.message || '책을 불러오지 못했어요.' });
+        }
       }
     })();
-    return () => { cancelled = true; };
+    return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route.type, route.slug]);
 

@@ -26,6 +26,8 @@
       })
     : null;
 
+  const BUCKET = 'book-images';
+
   // 6자 영숫자 슬러그 — 사람이 헷갈리기 쉬운 글자(0/O/1/l/I)는 제외
   const ALPHABET = '23456789abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ';
   function generateSlug(len = 6) {
@@ -36,7 +38,56 @@
     return s;
   }
 
-  // 업로드 검증 — 클라이언트에서 한 번 거름 (서버 RLS는 무결성만 체크)
+  // base64 data URL → Blob 변환
+  function dataURLtoBlob(dataURL) {
+    const [header, base64] = dataURL.split(',');
+    const mime = header.match(/:(.*?);/)[1];
+    const binary = atob(base64);
+    const arr = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+
+  // base64 data URL인지 확인
+  function isDataURL(str) {
+    return typeof str === 'string' && str.startsWith('data:image/');
+  }
+
+  // 이미지 한 장을 Storage에 업로드하고 공개 URL 반환
+  async function uploadImage(bookSlug, pageIdx, field, dataURL) {
+    const blob = dataURLtoBlob(dataURL);
+    const ext = blob.type.split('/')[1] || 'png';
+    const path = `${bookSlug}/${pageIdx}-${field}.${ext}`;
+    const { error } = await sb.storage.from(BUCKET).upload(path, blob, {
+      contentType: blob.type,
+      upsert: false,
+    });
+    if (error) throw new Error(`이미지 업로드 실패: ${error.message}`);
+    const { data } = sb.storage.from(BUCKET).getPublicUrl(path);
+    return data.publicUrl;
+  }
+
+  // 책 데이터에서 base64 이미지를 모두 Storage URL로 교체한 사본 반환
+  async function extractAndUploadImages(data, slug) {
+    // 깊은 복사 없이 페이지 배열만 새로 구성 (data URL은 크므로 직접 변환)
+    const pages = await Promise.all(
+      (data.pages || []).map(async (page, idx) => {
+        const p = { ...page };
+        if (isDataURL(p.drawing)) {
+          try {
+            p.drawing = await uploadImage(slug, idx, 'drawing', p.drawing);
+          } catch (e) {
+            console.warn(`[PB] 페이지 ${idx} 이미지 업로드 실패, base64 유지:`, e.message);
+            // 업로드 실패 시 base64 그대로 유지 (폴백)
+          }
+        }
+        return p;
+      })
+    );
+    return { ...data, pages };
+  }
+
+  // 업로드 검증 — 클라이언트에서 한 번 거름
   function validateBook(data) {
     if (!data || typeof data !== 'object') return '책 데이터가 비어 있어요';
     if (!Array.isArray(data.pages)) return '페이지 정보가 없어요';
@@ -44,16 +95,13 @@
     if (data.pages.length > (cfg.MAX_PAGES || 30)) {
       return `페이지가 너무 많아요 (최대 ${cfg.MAX_PAGES || 30}장)`;
     }
-    const bytes = new Blob([JSON.stringify(data)]).size;
-    if (bytes > (cfg.MAX_BOOK_BYTES || 200 * 1024)) {
-      const kb = Math.round(bytes / 1024);
-      const maxKb = Math.round((cfg.MAX_BOOK_BYTES || 200 * 1024) / 1024);
-      return `책이 너무 커요 (${kb}KB / 최대 ${maxKb}KB)`;
-    }
     return null;
   }
 
-  // 책 업로드 — 중복 slug 만나면 최대 3번 재시도
+  // 책 업로드
+  //   1) 이미지를 Storage에 먼저 올려 URL로 교체
+  //   2) 교체된 JSON을 books 테이블에 INSERT
+  //   슬러그 충돌 시 최대 3번 재시도
   async function uploadBook(data, opts = {}) {
     if (!sb) throw new Error('Supabase가 설정되지 않았어요 (config.js 확인)');
 
@@ -65,9 +113,26 @@
 
     for (let attempt = 0; attempt < 3; attempt++) {
       const slug = generateSlug();
+
+      // 이미지 분리 업로드 (실패해도 base64 폴백으로 계속)
+      let uploadData;
+      try {
+        uploadData = await extractAndUploadImages(data, slug);
+      } catch (e) {
+        console.warn('[PB] 이미지 분리 실패, 원본 데이터 사용:', e.message);
+        uploadData = data;
+      }
+
+      // JSON 크기 최종 확인 (이미지 분리 후 훨씬 작아져야 함)
+      const bytes = new Blob([JSON.stringify(uploadData)]).size;
+      const maxBytes = cfg.MAX_BOOK_BYTES || 500 * 1024; // Storage 분리 후 한도 500KB로 완화
+      if (bytes > maxBytes) {
+        throw new Error(`책이 너무 커요 (${Math.round(bytes / 1024)}KB / 최대 ${Math.round(maxBytes / 1024)}KB). 이미지 화질을 낮춰보세요.`);
+      }
+
       const { error } = await sb
         .from('books')
-        .insert({ slug, data, class_code: classCode, nickname });
+        .insert({ slug, data: uploadData, class_code: classCode, nickname });
 
       if (!error) return { slug };
       // 23505 = unique_violation (slug 충돌). 재시도.

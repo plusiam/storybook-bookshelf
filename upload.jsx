@@ -58,15 +58,22 @@ function HowToModal({ onClose }) {
           <div className="howto-step">
             <div className="howto-step-num">4</div>
             <div className="howto-step-body">
-              <strong>다른 기기에서 보려면</strong>
-              <p>책등에 마우스를 올리면 나오는 <em>↓ 버튼</em>으로 JSON을 저장해요. 다른 기기에서 다시 꽂으면 돼요.</p>
+              <strong>🔗 친구·부모님께 공유하기</strong>
+              <p>책등의 <em>🔗 버튼</em>을 누르면 짧은 링크가 만들어져요. 카톡·알림장·패들렛에 붙여 넣으면 누구나 열어볼 수 있어요.</p>
             </div>
           </div>
           <div className="howto-step">
             <div className="howto-step-num">5</div>
             <div className="howto-step-body">
-              <strong>책장 초기화</strong>
-              <p>책장은 이 기기(브라우저)에만 저장돼요. 초기화하면 모두 사라지니, 먼저 <em>전체 내보내기</em>로 백업하세요.</p>
+              <strong>🏛 학급 작품집 보기</strong>
+              <p>선생님이 알려주신 <em>학급 코드</em>를 입력하면 우리 반 친구들의 책이 한 곳에 모여요. 공유할 때 학급 코드를 함께 입력하면 돼요.</p>
+            </div>
+          </div>
+          <div className="howto-step">
+            <div className="howto-step-num">6</div>
+            <div className="howto-step-body">
+              <strong>다른 기기·책장 초기화</strong>
+              <p>책등의 <em>↓ 버튼</em>으로 JSON을 저장하면 다른 기기에서 다시 꽂을 수 있어요. 초기화 전 <em>전체 내보내기</em>로 꼭 백업하세요.</p>
             </div>
           </div>
         </div>

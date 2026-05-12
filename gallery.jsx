@@ -13,18 +13,18 @@ const { useState: useStateGL, useEffect: useEffectGL, useCallback: useCallbackGL
 function Gallery({ classCode, onOpenBook, onBack }) {
   const [state, setState] = useStateGL({ loading: true, error: null, books: [] });
 
-  const fetchBooks = useCallbackGL(async () => {
+  const fetchBooks = useCallbackGL(async (signal) => {
     setState((s) => ({ ...s, loading: true, error: null }));
     try {
       if (!PB || !PB.isConfigured()) {
         throw new Error('Supabase 설정이 안 돼 있어요.');
       }
       const rows = await PB.getClassBooks(classCode);
+      if (signal?.aborted) return;
       const books = rows
         .map((r) => {
           const norm = normalizeBook(r.data);
           if (!norm) return null;
-          // slug·nickname을 normalized book에 메타로 부착
           norm.__slug = r.slug;
           norm.__remoteNickname = r.nickname;
           return norm;
@@ -32,11 +32,17 @@ function Gallery({ classCode, onOpenBook, onBack }) {
         .filter(Boolean);
       setState({ loading: false, error: null, books });
     } catch (e) {
-      setState({ loading: false, error: e?.message || '학급 책장을 불러오지 못했어요.', books: [] });
+      if (!signal?.aborted) {
+        setState({ loading: false, error: e?.message || '학급 책장을 불러오지 못했어요.', books: [] });
+      }
     }
   }, [classCode]);
 
-  useEffectGL(() => { fetchBooks(); }, [fetchBooks]);
+  useEffectGL(() => {
+    const controller = new AbortController();
+    fetchBooks(controller.signal);
+    return () => controller.abort();
+  }, [fetchBooks]);
 
   return (
     <div className="gallery-scene">
@@ -53,7 +59,7 @@ function Gallery({ classCode, onOpenBook, onBack }) {
         </div>
         <button
           className="gallery-refresh"
-          onClick={fetchBooks}
+          onClick={() => fetchBooks()}
           disabled={state.loading}
           aria-label="새로고침"
           title="새로고침"
