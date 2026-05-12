@@ -2306,3 +2306,501 @@ html, body {
   white-space: nowrap;
   border: 0;
 }
+
+/* =========================================================
+   공유 링크 모달 & 공유 버튼 (Supabase 단축링크)
+   ========================================================= */
+
+/* 책등 공유 버튼 — 책 다운로드(↓) 버튼과 짝 */
+.book-spine-share {
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 24px; height: 24px;
+  border: 0; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  color: #2c5fa3;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease, background 0.18s ease;
+  display: grid; place-items: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  z-index: 3;
+}
+.shelf-book-spine:hover .book-spine-share { opacity: 1; }
+.book-spine-share:hover { transform: scale(1.12); background: #fff; }
+
+/* 다운로드 버튼이 위에 있으므로, share는 한 칸 아래 */
+.shelf-book-spine .book-spine-share { top: 38px; }
+
+/* ── 공유 모달 ── */
+.share-backdrop {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(20, 16, 8, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: grid; place-items: center;
+  padding: 20px;
+  animation: shareFadeIn 0.18s ease;
+}
+@keyframes shareFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.share-card {
+  position: relative;
+  width: min(480px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--bg, #fdf8ef);
+  color: var(--ink, #2b2317);
+  border-radius: 20px;
+  padding: 32px 28px 24px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.28), 0 4px 12px rgba(0,0,0,0.12);
+  animation: sharePop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes sharePop {
+  from { transform: scale(0.94) translateY(8px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.share-close {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 32px; height: 32px;
+  border: 0; border-radius: 50%;
+  background: transparent;
+  font-size: 22px; line-height: 1;
+  color: var(--ink-soft, #806b50);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.share-close:hover { background: rgba(0,0,0,0.06); }
+
+.share-header { text-align: center; margin-bottom: 18px; }
+.share-icon { font-size: 38px; display: block; margin-bottom: 6px; }
+.share-icon--success { font-size: 44px; }
+.share-icon--error { font-size: 40px; }
+.share-title {
+  font-family: var(--font-display, 'Jua', sans-serif);
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+.share-sub {
+  font-size: 13.5px;
+  color: var(--ink-soft, #806b50);
+  margin: 0;
+  line-height: 1.55;
+}
+
+.share-form { display: flex; flex-direction: column; gap: 14px; margin: 14px 0; }
+.share-field { display: flex; flex-direction: column; gap: 5px; }
+.share-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink, #2b2317);
+}
+.share-label em {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--ink-soft, #806b50);
+  margin-left: 4px;
+  font-size: 12px;
+}
+.share-input {
+  appearance: none;
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14.5px;
+  border: 1.5px solid rgba(0,0,0,0.12);
+  border-radius: 10px;
+  background: #fff;
+  color: inherit;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.share-input:focus { border-color: var(--accent, #d97757); }
+.share-hint { font-size: 12px; color: var(--ink-soft, #806b50); }
+
+.share-privacy {
+  background: rgba(217, 119, 87, 0.08);
+  border-left: 3px solid var(--accent, #d97757);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  color: var(--ink, #2b2317);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.share-actions {
+  display: flex; gap: 8px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.share-btn {
+  appearance: none;
+  border: 0;
+  padding: 11px 18px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.18s ease, background 0.15s ease;
+  display: inline-flex; align-items: center; gap: 6px;
+  text-decoration: none;
+  flex: 1;
+  justify-content: center;
+  min-width: 120px;
+}
+.share-btn--primary {
+  background: var(--accent, #d97757);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(217, 119, 87, 0.32);
+}
+.share-btn--primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(217, 119, 87, 0.42);
+}
+.share-btn--primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.share-btn--ghost {
+  background: transparent;
+  color: var(--ink-soft, #806b50);
+}
+.share-btn--ghost:hover { background: rgba(0,0,0,0.04); }
+
+.share-uploading {
+  text-align: center;
+  padding: 28px 0 20px;
+}
+.share-spinner {
+  font-size: 44px;
+  display: inline-block;
+  animation: shareSpin 1.4s ease-in-out infinite;
+}
+@keyframes shareSpin {
+  0%, 100% { transform: rotate(-8deg) scale(1); }
+  50%      { transform: rotate(8deg) scale(1.06); }
+}
+.share-uploading p {
+  margin: 14px 0 0;
+  color: var(--ink-soft, #806b50);
+}
+
+.share-url-row {
+  display: flex; gap: 8px;
+  margin: 18px 0 14px;
+  align-items: center;
+}
+.share-url-input {
+  flex: 1;
+  appearance: none;
+  padding: 10px 12px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 12.5px;
+  border: 1.5px solid rgba(0,0,0,0.12);
+  border-radius: 10px;
+  background: rgba(0,0,0,0.04);
+  color: var(--ink, #2b2317);
+  outline: none;
+}
+.share-url-row .share-btn {
+  flex: 0 0 auto;
+  min-width: 90px;
+  padding: 11px 14px;
+}
+
+.share-tips {
+  background: rgba(0,0,0,0.03);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 8px 0 16px;
+}
+.share-tips-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin: 0 0 6px;
+  color: var(--ink, #2b2317);
+}
+.share-tips ul {
+  margin: 0; padding-left: 4px;
+  list-style: none;
+  font-size: 13px;
+  color: var(--ink-soft, #806b50);
+  line-height: 1.7;
+}
+
+/* ── 공유 링크 fetch 로딩/에러 화면 ── */
+.remote-state {
+  min-height: 70vh;
+  display: grid; place-items: center;
+  text-align: center;
+  padding: 40px 20px;
+}
+.remote-state-spinner {
+  font-size: 60px;
+  animation: shareSpin 1.4s ease-in-out infinite;
+}
+.remote-state-text {
+  margin-top: 14px;
+  color: var(--ink-soft, #806b50);
+  font-size: 15px;
+}
+.remote-state--error { gap: 6px; }
+.remote-state-icon { font-size: 64px; }
+.remote-state-title {
+  font-family: var(--font-display, 'Jua', sans-serif);
+  font-size: 26px;
+  margin: 8px 0 4px;
+}
+.remote-state--error .btn {
+  margin-top: 18px;
+}
+
+/* 모바일 */
+@media (max-width: 480px) {
+  .share-card { padding: 26px 20px 18px; border-radius: 16px; }
+  .share-title { font-size: 19px; }
+  .share-url-row { flex-direction: column; align-items: stretch; }
+  .share-url-row .share-btn { width: 100%; }
+  .share-actions { flex-direction: column; }
+  .share-btn { width: 100%; flex: 1 1 auto; }
+}
+
+/* =========================================================
+   다단 책장 (MultiShelf) & 학급 작품집 (Gallery)
+   ========================================================= */
+
+.multi-shelf {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.multi-shelf-tier {
+  position: relative;
+  padding: 12px 28px 0;
+}
+
+.multi-shelf-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 6px;
+  min-height: 168px;
+  padding: 0 8px;
+  flex-wrap: nowrap;
+}
+.multi-shelf-row .shelf-book-spine {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.multi-shelf-plank {
+  height: 10px;
+  background: linear-gradient(180deg, #b2895f 0%, #8a653f 100%);
+  border-radius: 2px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+  margin: 0 16px;
+}
+.multi-shelf-shadow {
+  height: 14px;
+  margin: 0 28px 4px;
+  background: radial-gradient(ellipse at center top, rgba(0, 0, 0, 0.22) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.multi-shelf.is-compact .multi-shelf-row { min-height: 140px; }
+
+/* ── 학급 갤러리 (#/g/:classCode) ── */
+.gallery-scene {
+  min-height: 100vh;
+  background: var(--bg, #fdf8ef);
+  color: var(--ink, #2b2317);
+  padding: 24px 16px 60px;
+  display: flex;
+  flex-direction: column;
+}
+
+.gallery-header {
+  display: grid;
+  grid-template-columns: 56px 1fr 56px;
+  align-items: center;
+  gap: 12px;
+  max-width: 1200px;
+  margin: 0 auto 24px;
+  width: 100%;
+}
+.gallery-back, .gallery-refresh {
+  appearance: none;
+  width: 44px; height: 44px;
+  border: 0; border-radius: 50%;
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--ink, #2b2317);
+  font-size: 20px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.12s ease;
+  display: grid; place-items: center;
+}
+.gallery-back:hover, .gallery-refresh:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.08);
+  transform: scale(1.05);
+}
+.gallery-refresh:disabled { opacity: 0.4; cursor: not-allowed; }
+.gallery-refresh { justify-self: end; }
+
+.gallery-title-block { text-align: center; }
+.gallery-tag {
+  display: inline-block;
+  font-size: 12.5px;
+  background: rgba(217, 119, 87, 0.12);
+  color: var(--accent, #d97757);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.gallery-title {
+  font-family: var(--font-display, 'Jua', sans-serif);
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+.gallery-title em {
+  font-style: normal;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-size: 22px;
+}
+.gallery-count {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  color: var(--ink-soft, #806b50);
+}
+.gallery-count strong {
+  color: var(--accent, #d97757);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.gallery-stage {
+  flex: 1;
+  margin: 0 0 30px;
+}
+
+.gallery-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--ink-soft, #806b50);
+}
+.gallery-state-icon { font-size: 56px; }
+.gallery-state h2 {
+  font-family: var(--font-display, 'Jua', sans-serif);
+  font-size: 22px;
+  margin: 12px 0 6px;
+  color: var(--ink, #2b2317);
+}
+.gallery-state p { margin: 4px 0; line-height: 1.6; }
+.gallery-state code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 13px;
+}
+.gallery-spinner {
+  font-size: 50px;
+  animation: shareSpin 1.4s ease-in-out infinite;
+}
+.gallery-state .btn { margin-top: 16px; }
+
+.gallery-footer {
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+}
+.gallery-hint {
+  font-size: 13px;
+  color: var(--ink-soft, #806b50);
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 10px;
+  padding: 10px 16px;
+  line-height: 1.55;
+}
+
+/* ── 메인 페이지 "학급 작품집" 카드 + 코드 입력 ── */
+.action-card--gallery {
+  /* action-card 기본 스타일은 기존 정의 사용 */
+}
+
+.gallery-prompt-panel {
+  max-width: 480px;
+  margin: 18px auto 0;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  padding: 18px 20px;
+  text-align: center;
+  animation: shareFadeIn 0.18s ease;
+}
+.gallery-prompt-title {
+  font-weight: 700;
+  font-size: 15px;
+  margin: 0 0 4px;
+  color: var(--ink, #2b2317);
+}
+.gallery-prompt-sub {
+  font-size: 12.5px;
+  color: var(--ink-soft, #806b50);
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+.gallery-prompt-form {
+  display: flex;
+  gap: 8px;
+}
+.gallery-prompt-input {
+  appearance: none;
+  flex: 1;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14.5px;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  background: #fff;
+  color: inherit;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.gallery-prompt-input:focus { border-color: var(--accent, #d97757); }
+.gallery-prompt-form .btn {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+}
+
+/* ── 모바일 대응 ── */
+@media (max-width: 720px) {
+  .multi-shelf-tier { padding: 8px 12px 0; }
+  .multi-shelf-row { gap: 4px; min-height: 144px; }
+  .multi-shelf-plank { margin: 0 4px; }
+  .multi-shelf-shadow { margin: 0 16px 4px; }
+  .gallery-title { font-size: 22px; }
+  .gallery-title em { font-size: 17px; }
+  .gallery-header { grid-template-columns: 44px 1fr 44px; }
+  .gallery-back, .gallery-refresh { width: 38px; height: 38px; font-size: 17px; }
+  .gallery-prompt-form { flex-direction: column; }
+  .gallery-prompt-form .btn { width: 100%; }
+}

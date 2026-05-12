@@ -79,12 +79,16 @@ function HowToModal({ onClose }) {
   );
 }
 
-function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample, onClearLibrary }) {
+function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample, onClearLibrary, onShareBook, onOpenGallery }) {
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const [showHowTo, setShowHowTo] = useState(false);
   const [showSampleModes, setShowSampleModes] = useState(false);
+  const [showGalleryPrompt, setShowGalleryPrompt] = useState(false);
+  const [galleryCode, setGalleryCode] = useState(() => {
+    try { return localStorage.getItem('pb-last-class-code') || ''; } catch { return ''; }
+  });
   const inputRef = useRef(null);
 
   const handleFiles = useCallback(async (files) => {
@@ -160,7 +164,7 @@ function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample,
       <section className="bookshelf-stage">
         <div className="bookshelf">
           <div className="bookshelf-row">
-            <ShelfBooks library={library} onOpen={onOpenBook} onRemove={onRemoveBook} />
+            <ShelfBooks library={library} onOpen={onOpenBook} onRemove={onRemoveBook} onShare={onShareBook} />
             <div
               className={`shelf-slot ${dragging ? 'is-active' : ''}`}
               onClick={() => inputRef.current?.click()}
@@ -211,12 +215,48 @@ function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample,
             <span className="action-card-label">스토리보드</span>
             <span className="action-card-desc">만들러 가기</span>
           </a>
+          <button className="action-card action-card--gallery" onClick={() => setShowGalleryPrompt((v) => !v)}>
+            <span className="action-card-icon">🏛</span>
+            <span className="action-card-label">학급 작품집</span>
+            <span className="action-card-desc">코드로 모아 보기</span>
+          </button>
           <button className="action-card action-card--help" onClick={() => setShowHowTo(true)}>
             <span className="action-card-icon">❓</span>
             <span className="action-card-label">사용법</span>
             <span className="action-card-desc">도움말 보기</span>
           </button>
         </div>
+
+        {/* 학급 작품집 코드 입력 */}
+        {showGalleryPrompt && (
+          <div className="gallery-prompt-panel">
+            <p className="gallery-prompt-title">학급 코드를 알려주세요</p>
+            <p className="gallery-prompt-sub">선생님이 알려주신 코드를 입력하면 친구들 작품을 함께 볼 수 있어요.</p>
+            <form
+              className="gallery-prompt-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const code = galleryCode.trim();
+                if (!code) return;
+                try { localStorage.setItem('pb-last-class-code', code); } catch {}
+                onOpenGallery && onOpenGallery(code);
+              }}
+            >
+              <input
+                className="gallery-prompt-input"
+                type="text"
+                value={galleryCode}
+                onChange={(e) => setGalleryCode(e.target.value.slice(0, 40))}
+                placeholder="예) 5-3-2026"
+                maxLength={40}
+                autoFocus
+              />
+              <button className="btn primary" type="submit" disabled={!galleryCode.trim()}>
+                📚 열기
+              </button>
+            </form>
+          </div>
+        )}
 
         {/* 샘플 보기 방식 선택 */}
         {showSampleModes && (
@@ -306,19 +346,26 @@ function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample,
 }
 
 /* ---------- 책장 위 책들 ---------- */
-function ShelfBooks({ library, onOpen, onRemove }) {
+function ShelfBooks({ library, onOpen, onRemove, onShare }) {
   if (!library || library.length === 0) return null;
   return (
     <>
       {library.map((book, i) => (
-        <BookSpine key={i} book={book} onClick={() => onOpen(i)} onRemove={() => onRemove(i)} index={i} />
+        <BookSpine
+          key={i}
+          book={book}
+          onClick={() => onOpen(i)}
+          onRemove={() => onRemove(i)}
+          onShare={onShare ? () => onShare(book) : null}
+          index={i}
+        />
       ))}
     </>
   );
 }
 
 /* ---------- 책 한 권 (책등) ---------- */
-function BookSpine({ book, onClick, onRemove, index }) {
+function BookSpine({ book, onClick, onRemove, onShare, index }) {
   const s = book?.student || {};
   const cover = book?.pages?.find((p) => p.type === 'cover');
   const hasImg = cover && typeof cover.drawing === 'string' && cover.drawing.startsWith('data:image');
@@ -361,20 +408,34 @@ function BookSpine({ book, onClick, onRemove, index }) {
           </div>
         )}
       </div>
+      {onShare && (
+        <button
+          className="book-spine-share"
+          onClick={(e) => { e.stopPropagation(); onShare(); }}
+          aria-label="공유 링크 만들기"
+          title="공유 링크 만들기"
+        >🔗</button>
+      )}
       <button
         className="book-spine-export"
         onClick={(e) => { e.stopPropagation(); downloadJSON(book, safeFilename(book)); }}
         aria-label="JSON으로 내보내기"
         title="JSON으로 저장"
       >↓</button>
-      <button
-        className="book-spine-remove"
-        onClick={(e) => { e.stopPropagation(); onRemove(); }}
-        aria-label="책장에서 빼기"
-        title="책장에서 빼기"
-      >×</button>
+      {onRemove && (
+        <button
+          className="book-spine-remove"
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+          aria-label="책장에서 빼기"
+          title="책장에서 빼기"
+        >×</button>
+      )}
     </div>
   );
 }
 
 window.UploadScreen = UploadScreen;
+window.BookSpine = BookSpine;
+window.ShelfBooks = ShelfBooks;
+window.downloadJSON = downloadJSON;
+window.safeFilename = safeFilename;

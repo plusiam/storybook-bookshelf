@@ -1,7 +1,21 @@
 /* global React, ReactDOM, UploadScreen, BookViewer, IntroAnimation, normalizeBook,
           ZoomModal, TweaksPanel, useTweaks, TweakSection, TweakRadio, TweakSelect, TweakToggle, TweakButton, TweakSlider,
-          PB_IDB */
+          ShareModal, PB, PB_IDB */
 const { useState, useEffect, useCallback, useRef } = React;
+
+/* ──────────────────────────────────────────────
+   hash 라우팅 — 단순 파서
+   #/             → home (책장)
+   #/b/:slug      → Supabase에서 책 한 권 펼치기
+   ────────────────────────────────────────────── */
+function parseRoute() {
+  const h = (window.location.hash || '').replace(/^#/, '');
+  const mBook = h.match(/^\/b\/([A-Za-z0-9]{4,12})$/);
+  if (mBook) return { type: 'book', slug: mBook[1] };
+  const mGallery = h.match(/^\/g\/(.+)$/);
+  if (mGallery) return { type: 'gallery', classCode: decodeURIComponent(mGallery[1]) };
+  return { type: 'home' };
+}
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "theme": "storybook",
@@ -44,10 +58,14 @@ function useFullscreen() {
 function App() {
   const [library, setLibrary] = useState([]);
   const [book, setBook] = useState(null);
+  const [bookSource, setBookSource] = useState('local'); // 'local' | 'remote'
   const [introDone, setIntroDone] = useState(false);
   const [zoom, setZoom] = useState(null); // { src, caption }
   const [expanded, setExpanded] = useState(false);
   const [tweaksOpen, setTweaksOpen] = useState(false);
+  const [route, setRoute] = useState(parseRoute);
+  const [remoteState, setRemoteState] = useState({ loading: false, error: null });
+  const [shareBook, setShareBook] = useState(null);
   const positionsRef = useRef({});
   const { isFS, toggle: toggleFS } = useFullscreen();
 
@@ -69,6 +87,44 @@ function App() {
       setLibrary(books.map(normalizeBook).filter(Boolean));
     })();
   }, []);
+
+  // hash 라우팅 — URL 바뀔 때마다 route 갱신
+  useEffect(() => {
+    const onHash = () => setRoute(parseRoute());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  // #/b/:slug 로 들어오면 Supabase에서 책 fetch
+  useEffect(() => {
+    if (route.type !== 'book') return;
+    let cancelled = false;
+    setRemoteState({ loading: true, error: null });
+    (async () => {
+      try {
+        if (!PB || !PB.isConfigured()) throw new Error('Supabase 설정이 안 돼 있어요.');
+        const row = await PB.getBook(route.slug);
+        if (cancelled) return;
+        if (!row) {
+          setRemoteState({ loading: false, error: '책을 찾을 수 없어요. 링크가 만료되었거나 잘못된 주소일 수 있어요.' });
+          return;
+        }
+        const norm = normalizeBook(row.data);
+        if (!norm) {
+          setRemoteState({ loading: false, error: '책 데이터가 깨져 있어요.' });
+          return;
+        }
+        setBook(norm);
+        setBookSource('remote');
+        setIntroDone(!t.showIntro);
+        setRemoteState({ loading: false, error: null });
+      } catch (e) {
+        if (!cancelled) setRemoteState({ loading: false, error: e?.message || '책을 불러오지 못했어요.' });
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route.type, route.slug]);
 
   useEffect(() => {
     document.body.dataset.theme = t.theme || 'storybook';
@@ -115,6 +171,7 @@ function App() {
       return next;
     });
     setBook(norm);
+    setBookSource('local');
     setIntroDone(!t.showIntro);
   }, [t.showIntro]);
 
@@ -129,8 +186,12 @@ function App() {
 
   const openFromLibrary = useCallback((i) => {
     const b = library[i];
-    if (b) { setBook(b); setIntroDone(!t.showIntro); }
+    if (b) { setBook(b); setBookSource('local'); setIntroDone(!t.showIntro); }
   }, [library, t.showIntro]);
+
+  const handleShareBook = useCallback((b) => {
+    setShareBook(b || book);
+  }, [book]);
 
   const removeFromLibrary = useCallback((i) => {
     setLibrary((prev) => {
@@ -142,8 +203,33 @@ function App() {
 
   const reset = useCallback(() => {
     setBook(null);
+    setBookSource('local');
     setIntroDone(false);
+    setRemoteState({ loading: false, error: null });
+    // 단일 공유 링크(#/b/...)는 정리해서 홈으로
+    // 갤러리(#/g/...)는 유지 → 갤러리 화면으로 복귀
+    if ((window.location.hash || '').startsWith('#/b/')) {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+      setRoute({ type: 'home' });
+    }
   }, []);
+
+  // 갤러리(#/g/...)에서 도서관으로 가는 명시적 핸들러
+  const goHome = useCallback(() => {
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    setRoute({ type: 'home' });
+    setBook(null);
+    setBookSource('local');
+    setRemoteState({ loading: false, error: null });
+  }, []);
+
+  // 갤러리에서 책 한 권 클릭 → 원격 책으로 펼치기
+  const openFromGallery = useCallback((b) => {
+    if (!b) return;
+    setBook(b);
+    setBookSource('remote');
+    setIntroDone(!t.showIntro);
+  }, [t.showIntro]);
 
   const clearLibrary = useCallback(async () => {
     await PB_IDB.clearLibrary();
@@ -153,16 +239,60 @@ function App() {
 
   const printPDF = useCallback(() => { window.print(); }, []);
 
+  // 공유 링크(#/b/:slug)로 들어왔는데 아직 로딩/에러 상태
+  if (!book && route.type === 'book') {
+    if (remoteState.loading) {
+      return (
+        <div className="remote-state">
+          <div className="remote-state-spinner">📚</div>
+          <p className="remote-state-text">책장에서 책을 꺼내는 중...</p>
+        </div>
+      );
+    }
+    if (remoteState.error) {
+      return (
+        <div className="remote-state remote-state--error">
+          <div className="remote-state-icon">😢</div>
+          <h2 className="remote-state-title">앗, 책이 없어요</h2>
+          <p className="remote-state-text">{remoteState.error}</p>
+          <button className="btn primary" onClick={reset}>📚 도서관으로 가기</button>
+        </div>
+      );
+    }
+  }
+
+  // 학급 작품집(#/g/:classCode)
+  if (!book && route.type === 'gallery') {
+    return (
+      <>
+        <Gallery
+          classCode={route.classCode}
+          onOpenBook={openFromGallery}
+          onBack={goHome}
+        />
+        {shareBook && <ShareModal book={shareBook} onClose={() => setShareBook(null)} />}
+      </>
+    );
+  }
+
   if (!book) {
     return (
-      <UploadScreen
-        onLoad={handleLoad}
-        library={library}
-        onOpenBook={openFromLibrary}
-        onRemoveBook={removeFromLibrary}
-        onLoadSample={loadSample}
-        onClearLibrary={clearLibrary}
-      />
+      <>
+        <UploadScreen
+          onLoad={handleLoad}
+          library={library}
+          onOpenBook={openFromLibrary}
+          onRemoveBook={removeFromLibrary}
+          onLoadSample={loadSample}
+          onClearLibrary={clearLibrary}
+          onShareBook={handleShareBook}
+          onOpenGallery={(code) => {
+            history.replaceState(null, '', `${window.location.pathname}${window.location.search}#/g/${encodeURIComponent(code)}`);
+            setRoute({ type: 'gallery', classCode: code });
+          }}
+        />
+        {shareBook && <ShareModal book={shareBook} onClose={() => setShareBook(null)} />}
+      </>
     );
   }
 
@@ -180,6 +310,14 @@ function App() {
         </div>
         <div className="book-topbar-right">
           <span className="book-author-mini">글·그림 {book.student?.name || ''}</span>
+          {bookSource === 'local' && (
+            <button
+              className="icon-btn"
+              onClick={() => handleShareBook(book)}
+              title="공유 링크 만들기"
+              aria-label="공유 링크 만들기"
+            >🔗</button>
+          )}
           <button className="icon-btn" onClick={openTweaks} title="디자인·보기 방식 바꾸기" aria-label="디자인 패널 열기">🎨</button>
           <button
             className={`icon-btn${expanded ? ' active' : ''}`}
@@ -223,6 +361,8 @@ function App() {
       <PrintLayout book={book} />
 
       {zoom && <ZoomModal src={zoom.src} caption={zoom.caption} onClose={() => setZoom(null)} />}
+
+      {shareBook && <ShareModal book={shareBook} onClose={() => setShareBook(null)} />}
 
       <TweaksPanel title="🎨 디자인 바꾸기">
         <TweakSection label="테마">
