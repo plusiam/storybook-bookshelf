@@ -1,4 +1,5 @@
-/* global React, ReactDOM, useTweaks, TeacherLogin, AdminShell, StudentUpload, PB */
+/* global React, ReactDOM, useTweaks,
+          TeacherLogin, AdminShell, StudentUpload, PublicGallery, PublicBookView, PB */
 const { useState, useEffect, useCallback } = React;
 
 /* ──────────────────────────────────────────────
@@ -17,8 +18,23 @@ const { useState, useEffect, useCallback } = React;
 function parseRoute() {
   const h = (window.location.hash || '').replace(/^#/, '');
   if (/^\/admin\/?$/.test(h)) return { type: 'admin' };
-  // /upload + 선택적 ?y=... 쿼리
   if (/^\/upload(\/|\?.*)?$/.test(h)) return { type: 'upload' };
+
+  // /c/<view_code>?y=<school_year>
+  const mGallery = h.match(/^\/c\/([0-9]{4})(\?.*)?$/);
+  if (mGallery) {
+    const qs = mGallery[2] ? new URLSearchParams(mGallery[2].slice(1)) : null;
+    return {
+      type: 'gallery',
+      viewCode: mGallery[1],
+      schoolYear: qs ? (qs.get('y') || '') : '',
+    };
+  }
+
+  // /b/<slug>
+  const mBook = h.match(/^\/b\/([A-Za-z0-9]{4,12})$/);
+  if (mBook) return { type: 'book', slug: mBook[1] };
+
   return { type: 'home' };
 }
 
@@ -117,6 +133,31 @@ function App() {
   }, [t.theme, t.fontFamily]);
 
   if (route.type === 'upload') return <StudentUpload />;
+
+  if (route.type === 'gallery') {
+    return (
+      <PublicGallery
+        viewCode={route.viewCode}
+        schoolYear={route.schoolYear}
+        onOpenBook={(row) => { window.location.hash = `#/b/${row.slug}`; }}
+        onMissingYear={(y) => {
+          window.location.hash = `#/c/${route.viewCode}?y=${encodeURIComponent(y)}`;
+        }}
+      />
+    );
+  }
+
+  if (route.type === 'book') {
+    return (
+      <PublicBookView
+        slug={route.slug}
+        onBack={() => {
+          if (window.history.length > 1) window.history.back();
+          else window.location.hash = '#/';
+        }}
+      />
+    );
+  }
 
   if (route.type === 'admin') {
     if (!authReady) {
