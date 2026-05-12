@@ -3439,324 +3439,10 @@ html, body {
   .books-admin-breadcrumb { flex-wrap: wrap; }
 }
 
-/* ─────────────────────────────────────────────────────────────
-   학부모 진입 (Phase 4) — family-entry.jsx
-   ───────────────────────────────────────────────────────────── */
-
-.family-scene {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 24px 16px;
-  background:
-    radial-gradient(900px 500px at 50% 0%, rgba(217, 119, 87, 0.10), transparent 60%),
-    var(--bg, #fdf8f3);
-}
-
-/* ── 입력 폼 ── */
-.family-form {
-  width: 100%;
-  max-width: 460px;
-  padding: 32px 28px;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 18px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-.family-form-header { text-align: center; }
-.family-form-tag {
-  display: inline-block;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  background: rgba(217, 119, 87, 0.12);
-  color: var(--accent-dark, #a85a3e);
-  border-radius: 999px;
-  margin-bottom: 10px;
-}
-.family-form-title {
-  font-family: var(--font-display);
-  font-size: 22px;
-  margin: 0 0 6px;
-  color: var(--ink, #29261b);
-}
-.family-form-sub {
-  font-size: 14px;
-  color: var(--ink-soft, rgba(41, 38, 27, 0.65));
-  margin: 0;
-  line-height: 1.5;
-}
-
-.family-form-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.family-field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.family-field > span {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--ink-soft, rgba(41, 38, 27, 0.7));
-}
-.family-field input,
-.family-field select {
-  height: 46px;
-  padding: 0 14px;
-  font-size: 15px;
-  border: 1.5px solid rgba(0, 0, 0, 0.12);
-  border-radius: 10px;
-  background: #fff;
-  color: inherit;
-  outline: none;
-  transition: border-color 0.15s ease;
-}
-.family-field input:focus,
-.family-field select:focus {
-  border-color: var(--accent, #d97757);
-}
-.family-field--code input {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  text-align: center;
-  font-size: 26px;
-  letter-spacing: 10px;
-  font-variant-numeric: tabular-nums;
-  height: 56px;
-}
-.family-field-row {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
-  gap: 10px;
-}
-
-.family-form-error {
-  margin: 0;
-  padding: 10px 12px;
-  font-size: 13px;
-  background: rgba(220, 38, 38, 0.08);
-  color: #b91c1c;
-  border-radius: 8px;
-}
-.family-form-submit {
-  height: 48px;
-  font-size: 15px;
-  font-weight: 600;
-}
-.family-form-hint {
-  margin: 0;
-  font-size: 12.5px;
-  color: var(--ink-soft, rgba(41, 38, 27, 0.55));
-  line-height: 1.6;
-  text-align: center;
-}
-
-/* ── 결과 갤러리 ── */
-.family-gallery {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 24px 16px 40px;
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-}
-.family-gallery-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  flex-wrap: wrap;
-}
-.family-gallery-title-block { flex: 1; }
-.family-gallery-tag {
-  display: inline-block;
-  padding: 3px 9px;
-  font-size: 11.5px;
-  font-weight: 600;
-  background: rgba(34, 197, 94, 0.14);
-  color: #166534;
-  border-radius: 999px;
-  margin-bottom: 6px;
-}
-.family-gallery-title {
-  font-family: var(--font-display);
-  font-size: 22px;
-  margin: 0 0 2px;
-}
-.family-gallery-meta {
-  margin: 0;
-  font-size: 13px;
-  color: var(--ink-soft, rgba(41, 38, 27, 0.6));
-}
-
-.family-gallery-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.family-gallery-section-title {
-  font-family: var(--font-display);
-  font-size: 17px;
-  margin: 0;
-  color: var(--ink, #29261b);
-}
-.family-gallery-section-title small {
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--ink-soft, rgba(41, 38, 27, 0.55));
-  margin-left: 6px;
-}
-.family-gallery-grid {
-  display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-}
-
-/* ── 가족용 책 카드 ── */
-.family-book-card {
-  appearance: none;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: #fff;
-  border-radius: 12px;
-  padding: 0;
-  overflow: hidden;
-  cursor: pointer;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.family-book-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.10);
-}
-.family-book-card.is-own {
-  border-color: rgba(234, 179, 8, 0.55);
-  box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.20), 0 2px 6px rgba(0, 0, 0, 0.04);
-}
-.family-book-cover {
-  position: relative;
-  aspect-ratio: 4 / 3;
-  background: rgba(0, 0, 0, 0.04);
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-}
-.family-book-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.family-book-cover-fallback {
-  font-size: 38px;
-  opacity: 0.4;
-}
-.family-book-own-badge {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  font-size: 11.5px;
-  font-weight: 600;
-  padding: 3px 8px;
-  background: rgba(234, 179, 8, 0.95);
-  color: #1f2937;
-  border-radius: 999px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
-}
-.family-book-info {
-  padding: 12px 14px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.family-book-title {
-  font-family: var(--font-display);
-  font-size: 15.5px;
-  margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.family-book-author {
-  margin: 0;
-  font-size: 12.5px;
-  color: var(--ink-soft, rgba(41, 38, 27, 0.6));
-}
-
-/* ── 빈 결과 / 에러 카드 ── */
-.family-empty {
-  margin: 20px 0;
-  padding: 40px 24px;
-  text-align: center;
-  background: #fff;
-  border: 1px dashed rgba(0, 0, 0, 0.12);
-  border-radius: 14px;
-  color: var(--ink-soft, rgba(41, 38, 27, 0.7));
-}
-.family-empty-icon { font-size: 40px; margin-bottom: 10px; }
-.family-empty h3 { margin: 0 0 8px; font-size: 17px; color: var(--ink, #29261b); }
-.family-empty p { margin: 0 0 16px; font-size: 13.5px; line-height: 1.6; }
-
-/* ── 책 펼침 뷰 (가족 모드 슬라이드) ── */
-.family-book-view {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg, #fdf8f3);
-}
-.family-book-view-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
-  background: #fff;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-}
-.family-book-view-title {
-  flex: 1;
-  font-family: var(--font-display);
-  font-size: 16px;
-  margin: 0;
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.family-book-view-author {
-  font-size: 12.5px;
-  color: var(--ink-soft, rgba(41, 38, 27, 0.6));
-  flex-shrink: 0;
-}
-.family-book-view-stage {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  min-height: 0;
-}
-
-@media (max-width: 720px) {
-  .family-form { padding: 24px 20px; }
-  .family-field-row { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-  .family-gallery-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
-  .family-gallery-title { font-size: 18px; }
-  .family-book-view-author { display: none; }
-}
+/* family-* 스타일(Phase 4)은 Phase 11에서 제거 — PublicGallery(pg-*)로 대체됨 */
 
 /* ─────────────────────────────────────────────────────────────
-   홈 — 두 진입점 안내 (Phase 6)
+   홈 — 진입점 안내 (Phase 6 / Phase 11에서 세 카드로 갱신)
    ───────────────────────────────────────────────────────────── */
 
 .home-scene {
@@ -3958,6 +3644,67 @@ html, body {
 
 .home-card--upload .home-card-icon { color: #1e40af; }
 .home-card--upload:hover { border-color: #3b82f6; }
+
+.home-card--guest .home-card-icon { color: #166534; }
+.home-card--guest:hover { border-color: rgba(34, 197, 94, 0.6); }
+
+/* 관람객 인라인 폼 (Phase 11) */
+.guest-entry {
+  width: 100%;
+  max-width: 460px;
+  padding: 32px 28px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.guest-entry-header { text-align: center; }
+.guest-entry-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  margin: 8px 0 6px;
+  color: var(--ink, #29261b);
+}
+.guest-entry-sub {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-soft, rgba(41, 38, 27, 0.65));
+  line-height: 1.55;
+}
+.guest-entry-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.guest-entry-field > span {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-soft, rgba(41, 38, 27, 0.7));
+}
+.guest-entry-field input {
+  height: 46px;
+  padding: 0 14px;
+  font-size: 15px;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  outline: none;
+  background: #fff;
+  transition: border-color 0.15s ease;
+}
+.guest-entry-field input:focus { border-color: var(--accent, #d97757); }
+.guest-entry-field--code input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-align: center;
+  font-size: 26px;
+  letter-spacing: 10px;
+  height: 56px;
+  font-variant-numeric: tabular-nums;
+}
+.guest-entry-submit { height: 48px; font-size: 15px; font-weight: 600; margin-top: 4px; }
+.guest-entry-back { background: transparent; }
 
 .home-note {
   margin: 0 0 20px;

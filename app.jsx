@@ -53,9 +53,84 @@ const FONT_PRESETS = {
 
 /* ─── 홈 — 두 진입점 안내 ─────────────────────────────────────── */
 
+function defaultSchoolYearHome() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = d.getMonth() + 1;
+  if (m >= 3 && m <= 7) return `${y}-1`;
+  if (m >= 8) return `${y}-2`;
+  return `${y - 1}-2`;
+}
+
+function GuestEntryForm({ onBack }) {
+  const [code, setCode] = useState('');
+  const [year, setYear] = useState(defaultSchoolYearHome);
+
+  const submit = (e) => {
+    e.preventDefault();
+    window.location.hash = `#/c/${code}?y=${encodeURIComponent(year)}`;
+  };
+
+  return (
+    <div className="home-scene">
+      <form className="guest-entry" onSubmit={submit}>
+        <header className="guest-entry-header">
+          <span className="home-tag">📖 작품집 들어가기</span>
+          <h1 className="guest-entry-title">학급 코드를 입력하세요</h1>
+          <p className="guest-entry-sub">
+            선생님이 알려주신 <strong>4자리 열람 코드</strong>와 <strong>학년도</strong>를 입력하면 작품집이 열려요.
+          </p>
+        </header>
+
+        <label className="guest-entry-field guest-entry-field--code">
+          <span>열람 코드 (4자리)</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]{4}"
+            maxLength={4}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+            placeholder="0000"
+            required
+            autoFocus
+          />
+        </label>
+
+        <label className="guest-entry-field">
+          <span>학년도</span>
+          <input
+            type="text"
+            value={year}
+            onChange={(e) => setYear(e.target.value)}
+            placeholder="2026-1"
+            required
+          />
+        </label>
+
+        <button
+          type="submit"
+          className="btn primary guest-entry-submit"
+          disabled={code.length !== 4 || !year.trim()}
+        >
+          작품집 열기
+        </button>
+        <button type="button" className="btn guest-entry-back" onClick={onBack}>
+          ← 뒤로
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function HomeScene() {
+  const [guestMode, setGuestMode] = useState(false);
   const goUpload = useCallback(() => { window.location.hash = '#/upload'; }, []);
   const goAdmin = useCallback(() => { window.location.hash = '#/admin'; }, []);
+
+  if (guestMode) {
+    return <GuestEntryForm onBack={() => setGuestMode(false)} />;
+  }
 
   return (
     <div className="home-scene">
@@ -66,21 +141,22 @@ function HomeScene() {
       </header>
 
       <div className="home-cards">
+        <button type="button" className="home-card home-card--guest" onClick={() => setGuestMode(true)}>
+          <span className="home-card-icon">📖</span>
+          <span className="home-card-label">작품집 보러 가기</span>
+          <span className="home-card-desc">4자리 열람 코드로 학급 작품집을 봐요</span>
+        </button>
         <button type="button" className="home-card home-card--upload" onClick={goUpload}>
           <span className="home-card-icon">✍️</span>
           <span className="home-card-label">작가로 올리기</span>
-          <span className="home-card-desc">선생님이 알려주신 6자리 업로드 코드로 내 작품을 올려요</span>
+          <span className="home-card-desc">6자리 업로드 코드로 내 작품을 올려요</span>
         </button>
         <button type="button" className="home-card home-card--admin" onClick={goAdmin}>
           <span className="home-card-icon">👩‍🏫</span>
           <span className="home-card-label">선생님으로 들어가기</span>
-          <span className="home-card-desc">학급을 만들고 두 종류 코드(열람·업로드)를 발급합니다</span>
+          <span className="home-card-desc">학급을 만들고 두 종류 코드를 발급합니다</span>
         </button>
       </div>
-
-      <p className="home-note">
-        🔍 학급 작품집을 보러 오셨다면, 선생님이 알려주신 <strong>4자리 열람 코드</strong> 주소(<code>#/c/0000</code>)로 바로 접속해 주세요.
-      </p>
 
       <footer className="home-footer">
         만든이 · <strong>룰루랄라 한기쌤</strong>
