@@ -1,22 +1,24 @@
-/* global React, ReactDOM, useTweaks, FamilyScene, TeacherLogin, AdminShell, PB */
+/* global React, ReactDOM, useTweaks, TeacherLogin, AdminShell, PB */
 const { useState, useEffect, useCallback } = React;
 
 /* ──────────────────────────────────────────────
-   가족 공유 그림책 도서관 — 진입 라우터
+   공개 학생 작가 작품집 — 진입 라우터 (Phase 7 임시)
 
    hash 라우팅
-     #/             → 두 진입점 안내 (학부모 / 교사)
-     #/family       → 학부모 진입 (4자리 코드 + 자녀 실명 매칭)
-     #/admin        → 교사 어드민 (Supabase Auth OTP)
+     #/             → 진입점 안내 (홈, Phase 11에서 새 정체성으로 재작성 예정)
+     #/admin        → 교사 어드민
 
-   학생 피드백 모드(JSON 드래그·드롭, IndexedDB 책장, 단축링크 공유 등)는
-   별개 브랜치(main)에서 운영하며 이 브랜치(family)에서는 의도적으로 제거되었습니다.
+   다음 Phase에 추가될 라우트:
+     #/upload       → 학생 작품 업로드 (Phase 9)
+     #/c/:viewCode  → 공개 학급 작품집 (Phase 10)
+     #/b/:slug      → 단권 뷰어 (Phase 10)
+
+   학생 피드백 모드(JSON 드래그·드롭, IndexedDB)는 main 브랜치에서 영구 유지됩니다.
    ────────────────────────────────────────────── */
 
 function parseRoute() {
   const h = (window.location.hash || '').replace(/^#/, '');
   if (/^\/admin\/?$/.test(h)) return { type: 'admin' };
-  if (/^\/family\/?$/.test(h)) return { type: 'family' };
   return { type: 'home' };
 }
 
@@ -36,27 +38,21 @@ const FONT_PRESETS = {
 /* ─── 홈 — 두 진입점 안내 ─────────────────────────────────────── */
 
 function HomeScene() {
-  const goFamily = useCallback(() => { window.location.hash = '#/family'; }, []);
   const goAdmin = useCallback(() => { window.location.hash = '#/admin'; }, []);
 
   return (
     <div className="home-scene">
       <header className="home-hero">
-        <span className="home-tag">📖 우리 반 그림책 도서관</span>
-        <h1 className="home-title">집에서 보는<br /><em>우리 아이 그림책</em></h1>
-        <p className="home-sub">학기말 학급 작품을 가정에서 함께 펼쳐 보는 비공개 도서관입니다.</p>
+        <span className="home-tag">📖 우리 학급 작가의 작품집</span>
+        <h1 className="home-title">학생 작가들의<br /><em>그림책 도서관</em></h1>
+        <p className="home-sub">곧 학생 업로드와 공개 학급 작품집 진입점이 추가됩니다 (Phase 9~11).</p>
       </header>
 
       <div className="home-cards">
-        <button type="button" className="home-card home-card--family" onClick={goFamily}>
-          <span className="home-card-icon">👨‍👩‍👧</span>
-          <span className="home-card-label">학부모님으로 들어가기</span>
-          <span className="home-card-desc">학급 코드 + 자녀 이름으로 자녀의 작품을 볼 수 있어요</span>
-        </button>
         <button type="button" className="home-card home-card--admin" onClick={goAdmin}>
           <span className="home-card-icon">👩‍🏫</span>
           <span className="home-card-label">선생님으로 들어가기</span>
-          <span className="home-card-desc">학급을 만들고 학생 작품을 업로드합니다</span>
+          <span className="home-card-desc">학급을 만들고 두 종류 코드(열람·업로드)를 발급합니다</span>
         </button>
       </div>
 
@@ -109,8 +105,6 @@ function App() {
     document.documentElement.style.setProperty('--font-hand', f.hand);
     document.documentElement.style.setProperty('--font-storybook', f.storybook);
   }, [t.theme, t.fontFamily]);
-
-  if (route.type === 'family') return <FamilyScene />;
 
   if (route.type === 'admin') {
     if (!authReady) {
