@@ -125,6 +125,9 @@ function PublicGallery({ viewCode, schoolYear, onOpenBook, onMissingYear }) {
 
   return (
     <div className="pg-scene">
+      <div className="pg-topbar">
+        <a className="btn btn-sm" href="#/" aria-label="홈으로">← 홈</a>
+      </div>
       <header className="pg-header">
         <span className="pg-tag">📖 학급 작품집</span>
         {cls ? (

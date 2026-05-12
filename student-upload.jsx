@@ -67,6 +67,9 @@ function UploadSuccess({ slug, penName, title, onUploadAnother }) {
         <button type="button" className="btn" onClick={onUploadAnother}>
           ＋ 다른 작품 더 올리기
         </button>
+        <a className="btn" href="#/">
+          🏠 홈으로
+        </a>
       </div>
 
       <p className="stu-success-hint">
@@ -194,6 +197,9 @@ function StudentUpload() {
   return (
     <div className="stu-scene">
       <form className="stu-form" onSubmit={submit}>
+        <div className="stu-topbar">
+          <a className="btn btn-sm" href="#/" aria-label="홈으로">← 홈</a>
+        </div>
         <header className="stu-header">
           <span className="stu-tag">✍️ 작가로 등록하기</span>
           <h1 className="stu-title">내가 만든 그림책을<br /><em>학급 작품집에 올려요</em></h1>
