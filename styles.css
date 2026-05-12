@@ -3680,6 +3680,92 @@ html, body {
 .home-card--guest .home-card-icon { color: #166534; }
 .home-card--guest:hover { border-color: rgba(34, 197, 94, 0.6); }
 
+/* 홈 — 사용 방법 안내 (Phase 11+) */
+.home-howto {
+  max-width: 640px;
+  width: 100%;
+  margin: 0 0 28px;
+  padding: 24px 26px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  text-align: left;
+}
+.home-howto-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  margin: 0 0 14px;
+  color: var(--ink, #29261b);
+}
+.home-howto-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.home-howto-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.home-howto-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  background: var(--accent, #d97757);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 50%;
+}
+.home-howto-body { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.home-howto-body strong {
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  color: var(--ink, #29261b);
+}
+.home-howto-body p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-soft, rgba(41, 38, 27, 0.7));
+  line-height: 1.6;
+}
+.home-howto-body em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ink, #29261b);
+}
+.home-howto-link {
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(217, 119, 87, 0.10);
+  color: var(--accent-dark, #a85a3e);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+.home-howto-link:hover { background: rgba(217, 119, 87, 0.20); }
+.home-howto-tip {
+  margin: 16px 0 0;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 10px;
+  color: var(--ink-soft, rgba(41, 38, 27, 0.7));
+  line-height: 1.6;
+}
+.home-howto-tip em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--accent-dark, #a85a3e);
+}
+
 /* 관람객 인라인 폼 (Phase 11) */
 .guest-entry {
   width: 100%;

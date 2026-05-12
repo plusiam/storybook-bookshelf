@@ -149,7 +149,7 @@ function HomeScene() {
         <button type="button" className="home-card home-card--upload" onClick={goUpload}>
           <span className="home-card-icon">✍️</span>
           <span className="home-card-label">작가로 올리기</span>
-          <span className="home-card-desc">6자리 업로드 코드로 내 작품을 올려요</span>
+          <span className="home-card-desc">스토리보드에서 만든 JSON과 6자리 코드로 올려요</span>
         </button>
         <button type="button" className="home-card home-card--admin" onClick={goAdmin}>
           <span className="home-card-icon">👩‍🏫</span>
@@ -157,6 +157,46 @@ function HomeScene() {
           <span className="home-card-desc">학급을 만들고 두 종류 코드를 발급합니다</span>
         </button>
       </div>
+
+      <section className="home-howto">
+        <h2 className="home-howto-title">📚 이렇게 활용해요</h2>
+        <ol className="home-howto-steps">
+          <li className="home-howto-step">
+            <span className="home-howto-num">1</span>
+            <div className="home-howto-body">
+              <strong>스토리보드에서 그림책 만들기</strong>
+              <p>
+                <a
+                  className="home-howto-link"
+                  href="https://plusiam.github.io/picturebook-storyboard/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  ✏️ picturebook-storyboard
+                </a>
+                에서 페이지마다 그림과 글을 채워 완성한 뒤 <strong>JSON 파일</strong>로 저장합니다.
+              </p>
+            </div>
+          </li>
+          <li className="home-howto-step">
+            <span className="home-howto-num">2</span>
+            <div className="home-howto-body">
+              <strong>작가로 올리기</strong>
+              <p>위의 <em>✍️ 작가로 올리기</em>에서 선생님이 알려주신 <strong>6자리 업로드 코드</strong>와 함께 JSON 파일을 끌어다 놓으면 학급 작품집에 등록돼요.</p>
+            </div>
+          </li>
+          <li className="home-howto-step">
+            <span className="home-howto-num">3</span>
+            <div className="home-howto-body">
+              <strong>친구·가족과 함께 보기</strong>
+              <p>업로드 후 받은 단권 공유 링크를 친구·가족에게 보내거나, 선생님이 알려주신 <strong>4자리 열람 코드</strong>로 학급 작품집 전체를 펼쳐 봐요.</p>
+            </div>
+          </li>
+        </ol>
+        <p className="home-howto-tip">
+          👩‍🏫 선생님은 위 <em>선생님으로 들어가기</em>에서 학급을 만들면 자동으로 <strong>열람 코드(4자리)</strong>와 <strong>업로드 코드(6자리)</strong>가 발급됩니다. 각 코드별 안내문은 어드민에서 한 번에 복사할 수 있어요.
+        </p>
+      </section>
 
       <footer className="home-footer">
         만든이 · <strong>룰루랄라 한기쌤</strong>
