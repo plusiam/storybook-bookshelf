@@ -145,7 +145,7 @@ function CreateClassForm({ onCreated, onCancel }) {
 
 /* ─── 학급 카드 ───────────────────────────────────────────────────── */
 
-function ClassCard({ cls, bookCount, onOpen, onRegenerate, onUnlock, onDelete }) {
+function ClassCard({ cls, bookCount, onOpen, onCopyAnnouncement, onRegenerate, onUnlock, onDelete }) {
   const locked = cls.locked_until && new Date(cls.locked_until) > new Date();
   const aged = ageInDays(cls.created_at) >= 365;
   const stop = (e) => e.stopPropagation();
@@ -185,6 +185,14 @@ function ClassCard({ cls, bookCount, onOpen, onRegenerate, onUnlock, onDelete })
       )}
 
       <div className="class-card-actions" onClick={stop}>
+        <button
+          type="button"
+          className="btn btn-sm class-card-announce"
+          onClick={onCopyAnnouncement}
+          title="학부모 안내 메시지를 클립보드에 복사"
+        >
+          📋 안내문
+        </button>
         <button type="button" className="btn btn-sm" onClick={onRegenerate}>
           🔁 코드 재발급
         </button>
@@ -246,6 +254,32 @@ function ClassesAdmin({ onSelectClass }) {
       await reload();
     } catch (e) {
       window.alert(e?.message || '잠금 해제에 실패했어요');
+    }
+  };
+
+  const handleCopyAnnouncement = async (cls) => {
+    // 현재 사이트의 family 진입 URL을 자동으로 생성합니다.
+    // 어드민이 보고 있는 도메인 = 학부모도 같은 도메인이라는 가정.
+    const url = `${window.location.origin}${window.location.pathname}#/family`;
+    const text =
+      `📖 ${cls.display_name} — 그림책 도서관 안내\n\n` +
+      `학부모님께\n` +
+      `우리 반에서 만든 그림책을 가정에서도 함께 보실 수 있도록 안내드립니다.\n\n` +
+      `📲 접속 주소: ${url}\n` +
+      `🔑 학급 코드: ${cls.class_code} (4자리 숫자)\n` +
+      `🏫 학년도: ${cls.school_year}\n` +
+      `🎓 학년·반: ${cls.grade}학년 ${cls.class_no}반\n` +
+      `👤 입력: 자녀 본인의 이름 (실명)\n\n` +
+      `위 5가지를 모두 정확히 입력하셔야 자녀의 작품을 볼 수 있어요.\n` +
+      `잘못된 입력이 반복되면 학급 코드가 1시간 잠깁니다.\n\n` +
+      `— 담임 드림`;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      window.alert('학부모 안내문이 클립보드에 복사되었어요.\n가정통신문이나 학급 메신저에 붙여넣어 주세요.');
+    } catch (e) {
+      // 클립보드 권한이 없을 때 — prompt로 폴백
+      window.prompt('아래 내용을 복사해서 사용해 주세요', text);
     }
   };
 
@@ -321,6 +355,7 @@ function ClassesAdmin({ onSelectClass }) {
               cls={c}
               bookCount={counts[c.id] || 0}
               onOpen={() => onSelectClass?.(c)}
+              onCopyAnnouncement={() => handleCopyAnnouncement(c)}
               onRegenerate={() => handleRegenerate(c)}
               onUnlock={() => handleUnlock(c)}
               onDelete={() => handleDelete(c)}

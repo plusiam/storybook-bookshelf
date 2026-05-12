@@ -3113,6 +3113,13 @@ html, body {
 .class-card-delete:hover {
   background: rgba(220, 38, 38, 0.10);
 }
+.class-card-announce {
+  background: rgba(59, 130, 246, 0.10);
+  color: #1e40af;
+}
+.class-card-announce:hover {
+  background: rgba(59, 130, 246, 0.18);
+}
 
 /* 새 학급 만들기 폼 */
 .class-create-card {
