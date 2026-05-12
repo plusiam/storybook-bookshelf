@@ -29,6 +29,10 @@
 //                                                 → 새 books row (이미지는 Storage에 분리 업로드)
 //   PB.updateBookVisibility(id, visibility)       → undefined ('private' | 'class')
 //   PB.deleteBook(id)                             → undefined (Storage 파일도 함께 정리 시도)
+//   ─── 학부모 진입 (Phase 4) ───
+//   PB.fetchClassBooks({code, school_year, grade, class_no, child_name})
+//                                                 → row[] (자녀 작품 + 학급 공개 작품, RPC)
+//                                                 빈 배열이면 코드/학년/반/이름 중 무엇이 틀렸는지 알려주지 않습니다.
 //   ─── 유틸 ───
 //   PB.generateSlug()                             → 6자 영숫자 (예: 'xK3p9q')
 //   PB.isConfigured()                             → boolean (config.js가 placeholder 아닌지)
@@ -447,6 +451,32 @@
     if (error) throw new Error(error.message || '공개 범위 변경에 실패했어요');
   }
 
+  // ── 학부모 진입 RPC (Phase 4) ───────────────────────────────────────
+  // 4요소(코드+학년도+학년+반)+자녀 이름 매칭. 통일 에러를 위해
+  // 어떤 입력이 틀렸는지 호출자에게 알리지 않습니다 (RPC가 빈 배열 반환).
+
+  async function fetchClassBooks({ code, school_year, grade, class_no, child_name }) {
+    if (!sb) throw new Error('Supabase가 설정되지 않았어요');
+
+    const p_code = (code || '').toString().trim();
+    const p_school_year = (school_year || '').toString().trim();
+    const p_grade = parseInt(grade, 10);
+    const p_class_no = parseInt(class_no, 10);
+    const p_child_name = (child_name || '').trim();
+
+    if (!/^[0-9]{4}$/.test(p_code)) throw new Error('학급 코드는 4자리 숫자입니다');
+    if (!p_school_year) throw new Error('학년도를 입력해 주세요');
+    if (!(p_grade >= 1 && p_grade <= 6)) throw new Error('학년은 1~6 사이여야 합니다');
+    if (!(p_class_no >= 1 && p_class_no <= 20)) throw new Error('반은 1~20 사이여야 합니다');
+    if (!p_child_name) throw new Error('자녀 이름을 입력해 주세요');
+
+    const { data, error } = await sb.rpc('get_class_books', {
+      p_code, p_school_year, p_grade, p_class_no, p_child_name,
+    });
+    if (error) throw new Error(error.message || '조회에 실패했어요');
+    return data || [];
+  }
+
   async function deleteBook(id) {
     if (!sb) throw new Error('Supabase가 설정되지 않았어요');
     // 책 row의 storage_paths를 먼저 조회 → 가능하면 Storage 파일 정리 → row 삭제
@@ -484,5 +514,6 @@
     createBookForClass,
     updateBookVisibility,
     deleteBook,
+    fetchClassBooks,
   };
 })();

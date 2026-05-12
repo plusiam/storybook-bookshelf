@@ -1,14 +1,15 @@
 /* global React, ReactDOM, UploadScreen, BookViewer, IntroAnimation, normalizeBook,
           ZoomModal, TweaksPanel, useTweaks, TweakSection, TweakRadio, TweakSelect, TweakToggle, TweakButton, TweakSlider,
-          ShareModal, Gallery, TeacherLogin, AdminShell, PB, PB_IDB */
+          ShareModal, Gallery, TeacherLogin, AdminShell, FamilyScene, PB, PB_IDB */
 const { useState, useEffect, useCallback, useRef } = React;
 
 /* ──────────────────────────────────────────────
    hash 라우팅 — 단순 파서
-   #/             → home (책장)
-   #/b/:slug      → Supabase에서 책 한 권 펼치기
-   #/g/:code      → 학급 작품집 (v1, Phase 4에서 폐기 예정)
-   #/admin        → 교사 어드민 (Phase 2 신설)
+   #/             → home (책장, v1 — Phase 6에서 정리 예정)
+   #/b/:slug      → Supabase 단권 (v1, RLS로 일시 broken)
+   #/g/:code      → 학급 작품집 (v1, 사용 안 함)
+   #/admin        → 교사 어드민 (Phase 2~3)
+   #/family       → 학부모 진입 (Phase 4)
    ────────────────────────────────────────────── */
 function parseRoute() {
   const h = (window.location.hash || '').replace(/^#/, '');
@@ -17,6 +18,7 @@ function parseRoute() {
   const mGallery = h.match(/^\/g\/(.+)$/);
   if (mGallery) return { type: 'gallery', classCode: decodeURIComponent(mGallery[1]) };
   if (/^\/admin\/?$/.test(h)) return { type: 'admin' };
+  if (/^\/family\/?$/.test(h)) return { type: 'family' };
   return { type: 'home' };
 }
 
@@ -266,6 +268,11 @@ function App() {
   }, []);
 
   const printPDF = useCallback(() => { window.print(); }, []);
+
+  // #/family — 학부모 진입 (RPC 기반, 인증 없음. 매칭 로직은 서버 RPC가 처리)
+  if (route.type === 'family') {
+    return <FamilyScene />;
+  }
 
   // #/admin — 교사 어드민 (Auth 가드)
   if (route.type === 'admin') {
