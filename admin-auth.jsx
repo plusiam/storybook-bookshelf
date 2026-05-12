@@ -9,22 +9,39 @@ const { useState: useStateAuth, useEffect: useEffectAuth, useCallback: useCallba
    ====================================================== */
 
 function TeacherLogin({ onSession }) {
-  const [step, setStep] = useStateAuth('email'); // 'email' | 'code'
+  // 'password' (기본) | 'email' (OTP 발송) | 'code' (OTP 검증)
+  const [mode, setMode] = useStateAuth('password');
   const [email, setEmail] = useStateAuth('');
+  const [password, setPassword] = useStateAuth('');
   const [code, setCode] = useStateAuth('');
   const [sending, setSending] = useStateAuth(false);
   const [verifying, setVerifying] = useStateAuth(false);
   const [error, setError] = useStateAuth(null);
   const [info, setInfo] = useStateAuth(null);
 
+  const resetMessages = () => { setError(null); setInfo(null); };
+
+  const signInPw = useCallbackAuth(async (e) => {
+    e?.preventDefault?.();
+    resetMessages();
+    setVerifying(true);
+    try {
+      const session = await PB.signInWithPassword(email, password);
+      if (session) onSession?.(session);
+    } catch (err) {
+      setError(err?.message || '로그인에 실패했어요');
+    } finally {
+      setVerifying(false);
+    }
+  }, [email, password, onSession]);
+
   const sendCode = useCallbackAuth(async (e) => {
     e?.preventDefault?.();
-    setError(null);
-    setInfo(null);
+    resetMessages();
     setSending(true);
     try {
       await PB.signInWithOtp(email);
-      setStep('code');
+      setMode('code');
       setInfo(`${email.trim()}로 6자리 코드를 보냈어요. 메일을 확인해 주세요.`);
     } catch (err) {
       setError(err?.message || '이메일 발송에 실패했어요');
@@ -33,9 +50,9 @@ function TeacherLogin({ onSession }) {
     }
   }, [email]);
 
-  const verify = useCallbackAuth(async (e) => {
+  const verifyCode = useCallbackAuth(async (e) => {
     e?.preventDefault?.();
-    setError(null);
+    resetMessages();
     setVerifying(true);
     try {
       const session = await PB.verifyOtp(email, code);
@@ -47,12 +64,11 @@ function TeacherLogin({ onSession }) {
     }
   }, [email, code, onSession]);
 
-  const goBack = useCallbackAuth(() => {
-    setStep('email');
+  const switchMode = (next) => {
+    setMode(next);
     setCode('');
-    setError(null);
-    setInfo(null);
-  }, []);
+    resetMessages();
+  };
 
   return (
     <div className="admin-auth-scene">
@@ -60,14 +76,74 @@ function TeacherLogin({ onSession }) {
         <header className="admin-auth-header">
           <span className="admin-auth-icon">👩‍🏫</span>
           <h1 className="admin-auth-title">교사 어드민</h1>
-          <p className="admin-auth-sub">학급을 만들고 학생 작품을 업로드합니다.</p>
+          <p className="admin-auth-sub">학급을 만들고 학생 작품을 관리합니다.</p>
         </header>
 
-        {step === 'email' && (
-          <form className="admin-auth-form" onSubmit={sendCode}>
-            <label className="admin-auth-label" htmlFor="admin-email">이메일</label>
+        {mode !== 'code' && (
+          <div className="admin-auth-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              className={`admin-auth-tab${mode === 'password' ? ' is-active' : ''}`}
+              onClick={() => switchMode('password')}
+            >
+              🔑 비밀번호
+            </button>
+            <button
+              type="button"
+              role="tab"
+              className={`admin-auth-tab${mode === 'email' ? ' is-active' : ''}`}
+              onClick={() => switchMode('email')}
+            >
+              📧 이메일 OTP
+            </button>
+          </div>
+        )}
+
+        {mode === 'password' && (
+          <form className="admin-auth-form" onSubmit={signInPw}>
+            <label className="admin-auth-label" htmlFor="admin-email-pw">이메일</label>
             <input
-              id="admin-email"
+              id="admin-email-pw"
+              className="admin-auth-input"
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              placeholder="teacher@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={verifying}
+            />
+            <label className="admin-auth-label" htmlFor="admin-password">비밀번호</label>
+            <input
+              id="admin-password"
+              className="admin-auth-input"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={verifying}
+            />
+            <button
+              className="btn primary admin-auth-submit"
+              type="submit"
+              disabled={verifying || !email.trim() || !password}
+            >
+              {verifying ? '확인 중...' : '로그인'}
+            </button>
+            <p className="admin-auth-hint">
+              🔐 이메일과 비밀번호로 빠르게 들어옵니다. 등록된 어드민만 사용 가능합니다.
+            </p>
+          </form>
+        )}
+
+        {mode === 'email' && (
+          <form className="admin-auth-form" onSubmit={sendCode}>
+            <label className="admin-auth-label" htmlFor="admin-email-otp">이메일</label>
+            <input
+              id="admin-email-otp"
               className="admin-auth-input"
               type="email"
               autoComplete="email"
@@ -86,13 +162,13 @@ function TeacherLogin({ onSession }) {
               {sending ? '메일 보내는 중...' : '6자리 코드 받기'}
             </button>
             <p className="admin-auth-hint">
-              📧 입력하신 이메일로 6자리 인증 코드를 보내드립니다. 처음이라도 자동으로 가입돼요.
+              📧 비밀번호 대신 6자리 코드로 로그인합니다. 메일이 안 오면 비밀번호 탭을 써주세요.
             </p>
           </form>
         )}
 
-        {step === 'code' && (
-          <form className="admin-auth-form" onSubmit={verify}>
+        {mode === 'code' && (
+          <form className="admin-auth-form" onSubmit={verifyCode}>
             <label className="admin-auth-label" htmlFor="admin-code">받은 6자리 코드</label>
             <input
               id="admin-code"
@@ -119,7 +195,7 @@ function TeacherLogin({ onSession }) {
             <button
               className="btn admin-auth-link"
               type="button"
-              onClick={goBack}
+              onClick={() => switchMode('email')}
               disabled={verifying}
             >
               ← 다른 이메일로 시도

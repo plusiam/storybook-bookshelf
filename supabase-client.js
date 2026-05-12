@@ -9,7 +9,8 @@
 //   PB.isConfigured()                              → boolean
 //   PB.generateSlug()                              → 6자 영숫자 (단권 슬러그)
 //
-//   ─── 인증 (교사 OTP) ───
+//   ─── 인증 (교사) ───
+//   PB.signInWithPassword(email, password)         → session
 //   PB.signInWithOtp(email)                        → undefined (이메일 발송)
 //   PB.verifyOtp(email, token)                     → session
 //   PB.signOut() / getSession() / onAuthStateChange(cb)
@@ -137,6 +138,16 @@
   // ─────────────────────────────────────────────────────────────────
   // 인증 (교사 OTP)
   // ─────────────────────────────────────────────────────────────────
+
+  async function signInWithPassword(email, password) {
+    if (!sb) throw new Error('Supabase가 설정되지 않았어요');
+    const cleaned = (email || '').trim().toLowerCase();
+    const pw = password || '';
+    if (!cleaned || !pw) throw new Error('이메일과 비밀번호를 모두 입력해 주세요');
+    const { data, error } = await sb.auth.signInWithPassword({ email: cleaned, password: pw });
+    if (error) throw new Error(error.message || '로그인에 실패했어요');
+    return data.session;
+  }
 
   async function signInWithOtp(email) {
     if (!sb) throw new Error('Supabase가 설정되지 않았어요');
@@ -401,7 +412,7 @@
     isConfigured: () => !placeholder && !!sb,
     generateSlug,
     // 인증
-    signInWithOtp, verifyOtp, signOut, getSession, onAuthStateChange,
+    signInWithPassword, signInWithOtp, verifyOtp, signOut, getSession, onAuthStateChange,
     // 학급
     listClasses, createClass, deleteClass, countBooksByClass,
     regenerateViewCode, regenerateUploadCode, unlockUpload,

@@ -2892,6 +2892,38 @@ html, body {
   color: var(--ink-soft, rgba(41, 38, 27, 0.55));
   line-height: 1.55;
 }
+
+.admin-auth-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+.admin-auth-tab {
+  flex: 1;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  color: var(--ink-soft, rgba(41, 38, 27, 0.6));
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.admin-auth-tab.is-active {
+  background: #fff;
+  color: var(--ink, #29261b);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.admin-auth-tab:hover:not(.is-active) {
+  color: var(--ink, #29261b);
+  background: rgba(0, 0, 0, 0.02);
+}
 .admin-auth-info {
   margin-top: 14px;
   padding: 10px 12px;
