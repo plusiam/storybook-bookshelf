@@ -1,15 +1,13 @@
-/* global React, ReactDOM, useTweaks, TeacherLogin, AdminShell, PB */
+/* global React, ReactDOM, useTweaks, TeacherLogin, AdminShell, StudentUpload, PB */
 const { useState, useEffect, useCallback } = React;
 
 /* ──────────────────────────────────────────────
-   공개 학생 작가 작품집 — 진입 라우터 (Phase 7 임시)
+   공개 학생 작가 작품집 — 진입 라우터
 
    hash 라우팅
-     #/             → 진입점 안내 (홈, Phase 11에서 새 정체성으로 재작성 예정)
+     #/             → 진입점 안내 (Phase 11에서 학생·관람객·교사 세 카드로 재작성 예정)
      #/admin        → 교사 어드민
-
-   다음 Phase에 추가될 라우트:
-     #/upload       → 학생 작품 업로드 (Phase 9)
+     #/upload       → 학생 작품 업로드 (?y=2026-1 학년도 자동 채움)
      #/c/:viewCode  → 공개 학급 작품집 (Phase 10)
      #/b/:slug      → 단권 뷰어 (Phase 10)
 
@@ -19,6 +17,8 @@ const { useState, useEffect, useCallback } = React;
 function parseRoute() {
   const h = (window.location.hash || '').replace(/^#/, '');
   if (/^\/admin\/?$/.test(h)) return { type: 'admin' };
+  // /upload + 선택적 ?y=... 쿼리
+  if (/^\/upload(\/|\?.*)?$/.test(h)) return { type: 'upload' };
   return { type: 'home' };
 }
 
@@ -38,6 +38,7 @@ const FONT_PRESETS = {
 /* ─── 홈 — 두 진입점 안내 ─────────────────────────────────────── */
 
 function HomeScene() {
+  const goUpload = useCallback(() => { window.location.hash = '#/upload'; }, []);
   const goAdmin = useCallback(() => { window.location.hash = '#/admin'; }, []);
 
   return (
@@ -45,16 +46,25 @@ function HomeScene() {
       <header className="home-hero">
         <span className="home-tag">📖 우리 학급 작가의 작품집</span>
         <h1 className="home-title">학생 작가들의<br /><em>그림책 도서관</em></h1>
-        <p className="home-sub">곧 학생 업로드와 공개 학급 작품집 진입점이 추가됩니다 (Phase 9~11).</p>
+        <p className="home-sub">완성한 작품을 학급 작품집에 올리고, 친구·가족과 함께 펼쳐 봐요.</p>
       </header>
 
       <div className="home-cards">
+        <button type="button" className="home-card home-card--upload" onClick={goUpload}>
+          <span className="home-card-icon">✍️</span>
+          <span className="home-card-label">작가로 올리기</span>
+          <span className="home-card-desc">선생님이 알려주신 6자리 업로드 코드로 내 작품을 올려요</span>
+        </button>
         <button type="button" className="home-card home-card--admin" onClick={goAdmin}>
           <span className="home-card-icon">👩‍🏫</span>
           <span className="home-card-label">선생님으로 들어가기</span>
           <span className="home-card-desc">학급을 만들고 두 종류 코드(열람·업로드)를 발급합니다</span>
         </button>
       </div>
+
+      <p className="home-note">
+        🔍 학급 작품집을 보러 오셨다면, 선생님이 알려주신 <strong>4자리 열람 코드</strong> 주소(<code>#/c/0000</code>)로 바로 접속해 주세요.
+      </p>
 
       <footer className="home-footer">
         만든이 · <strong>룰루랄라 한기쌤</strong>
@@ -105,6 +115,8 @@ function App() {
     document.documentElement.style.setProperty('--font-hand', f.hand);
     document.documentElement.style.setProperty('--font-storybook', f.storybook);
   }, [t.theme, t.fontFamily]);
+
+  if (route.type === 'upload') return <StudentUpload />;
 
   if (route.type === 'admin') {
     if (!authReady) {
