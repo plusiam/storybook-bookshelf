@@ -3754,3 +3754,100 @@ html, body {
   .family-gallery-title { font-size: 18px; }
   .family-book-view-author { display: none; }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   홈 — 두 진입점 안내 (Phase 6)
+   ───────────────────────────────────────────────────────────── */
+
+.home-scene {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  background:
+    radial-gradient(900px 500px at 50% 0%, rgba(217, 119, 87, 0.12), transparent 60%),
+    var(--bg, #fdf8f3);
+}
+
+.home-hero { margin-bottom: 30px; max-width: 560px; }
+.home-tag {
+  display: inline-block;
+  padding: 5px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: rgba(217, 119, 87, 0.14);
+  color: var(--accent-dark, #a85a3e);
+  border-radius: 999px;
+  margin-bottom: 14px;
+}
+.home-title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  line-height: 1.25;
+  margin: 0 0 12px;
+  color: var(--ink, #29261b);
+}
+.home-title em {
+  font-style: normal;
+  color: var(--accent-dark, #a85a3e);
+}
+.home-sub {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ink-soft, rgba(41, 38, 27, 0.65));
+}
+
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  width: 100%;
+  max-width: 640px;
+  margin-bottom: 30px;
+}
+.home-card {
+  appearance: none;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
+  border-radius: 16px;
+  padding: 22px 20px 20px;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.home-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.10);
+  border-color: var(--accent, #d97757);
+}
+.home-card-icon { font-size: 38px; }
+.home-card-label {
+  font-family: var(--font-display);
+  font-size: 17px;
+  color: var(--ink, #29261b);
+}
+.home-card-desc {
+  font-size: 12.5px;
+  color: var(--ink-soft, rgba(41, 38, 27, 0.6));
+  line-height: 1.5;
+}
+
+.home-footer {
+  font-size: 12.5px;
+  color: var(--ink-soft, rgba(41, 38, 27, 0.55));
+}
+.home-footer strong { color: var(--accent-dark, #a85a3e); font-weight: 600; }
+
+@media (max-width: 720px) {
+  .home-title { font-size: 26px; }
+  .home-cards { grid-template-columns: 1fr; }
+}
