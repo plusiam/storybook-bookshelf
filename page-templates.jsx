@@ -40,6 +40,12 @@ function ImageSlot({ page, label, onZoom }) {
       <div
         className="page-image is-clickable"
         onClick={(e) => { e.stopPropagation(); onZoom && onZoom(page.drawing, page.prompt || page.label); }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault(); e.stopPropagation();
+            onZoom && onZoom(page.drawing, page.prompt || page.label);
+          }
+        }}
         role="button"
         tabIndex={0}
         title="클릭해서 크게 보기"

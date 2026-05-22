@@ -164,6 +164,9 @@ function UploadScreen({ onLoad, library, onOpenBook, onRemoveBook, onLoadSample,
             <div
               className={`shelf-slot ${dragging ? 'is-active' : ''}`}
               onClick={() => inputRef.current?.click()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inputRef.current?.click(); }
+              }}
               role="button"
               tabIndex={0}
               aria-label="JSON 끌어다 놓기"
@@ -346,6 +349,9 @@ function BookSpine({ book, onClick, onRemove, index }) {
       className="shelf-book-spine"
       style={{ '--spine-bg': c.bg, '--spine-accent': c.accent, width: `${width}px`, transform: `rotate(${tilt}deg)` }}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); }
+      }}
       role="button"
       tabIndex={0}
       aria-label={`${s.title || '제목 없는 그림책'} 펼치기`}
