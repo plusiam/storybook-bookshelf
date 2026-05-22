@@ -67,6 +67,20 @@ async function idbClear(storeName) {
   });
 }
 
+// clear + 여러 put을 한 트랜잭션으로 묶어 원자적으로 교체 (전부 커밋 또는 전부 롤백)
+async function idbReplaceAll(storeName, records) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    store.clear();
+    for (const r of records) store.put(r);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+
 /* ─── 라이브러리 ─────────────────────────────────────────── */
 
 async function loadLibraryIDB() {
@@ -82,11 +96,12 @@ async function loadLibraryIDB() {
 
 async function saveLibraryIDB(books) {
   try {
-    await idbClear(STORE_LIBRARY);
-    for (let i = 0; i < books.length; i++) {
-      const key = bookKeyFromData(books[i]);
-      await idbPut(STORE_LIBRARY, { key, index: i, data: books[i] });
-    }
+    const records = books.map((data, i) => ({
+      key: bookKeyFromData(data),
+      index: i,
+      data,
+    }));
+    await idbReplaceAll(STORE_LIBRARY, records);
   } catch (e) {
     console.warn('[IDB] 라이브러리 저장 실패:', e);
   }
