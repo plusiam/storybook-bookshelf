@@ -170,6 +170,7 @@ function App() {
   const initialPos = positionsRef.current[bk] || 0;
 
   return (
+    <>
     <div className={`book-screen${expanded ? ' is-expanded' : ''}`} style={{ '--text-scale': t.textScale }}>
       <div className="book-topbar">
         <div className="book-topbar-left">
@@ -219,8 +220,6 @@ function App() {
         }}
         onZoom={(src, caption) => setZoom({ src, caption })}
       />
-
-      <PrintLayout book={book} />
 
       {zoom && <ZoomModal src={zoom.src} caption={zoom.caption} onClose={() => setZoom(null)} />}
 
@@ -295,6 +294,8 @@ function App() {
         </TweakSection>
       </TweaksPanel>
     </div>
+    <PrintLayout book={book} />
+    </>
   );
 }
 
