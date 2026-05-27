@@ -1,4 +1,4 @@
-/* global React, PageRenderer */
+/* global React, PageRenderer, hasDrawing */
 const { useState: useStateBook, useEffect: useEffectBook, useMemo: useMemoBook, useRef: useRefBook, useCallback: useCallbackBook } = React;
 
 /* ======================================================
@@ -22,12 +22,14 @@ function buildSpreads(pages, mode /* 'flat' | 'spread' */) {
 
   if (mode === 'spread') {
     // 각 스토리 페이지 = 좌(그림) + 우(텍스트)
+    // 그림이 없는 페이지는 좌측을 챕터 인트로 면으로 대체해 진짜 책처럼 양면을 채움
     for (const p of story) {
+      const drawn = hasDrawing(p);
       spreads.push({
         left: p,
         right: p,
-        leftKind: 'spread-image',
-        rightKind: 'spread-text',
+        leftKind: drawn ? 'spread-image' : 'spread-text-intro',
+        rightKind: drawn ? 'spread-text' : 'spread-text-cont',
         pageRef: p,
       });
     }

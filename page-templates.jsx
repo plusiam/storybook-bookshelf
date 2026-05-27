@@ -204,6 +204,32 @@ function StoryPage({ page, layout, total, onZoom }) {
   );
 }
 
+/* ---------- 펼침면 좌측 인트로 — 그림 없는 페이지용 ----------
+   진짜 그림책의 챕터 시작 펼침면처럼 큰 인용구 + 색지 배경으로 좌측을 채움.
+   우선순위: prompt > label > text 첫 문장 */
+function pickIntroQuote(page) {
+  const prompt = (page.prompt || '').trim();
+  if (prompt) return prompt;
+  const label = (page.label || '').trim();
+  if (label) return label;
+  const text = (page.text || '').trim();
+  if (!text) return '';
+  const m = text.match(/^[^.!?。！？\n]+[.!?。！？]?/);
+  return (m ? m[0] : text.slice(0, 40)).trim();
+}
+function SpreadTextIntro({ page }) {
+  const typeClass = `is-${page.type || 'middle'}`;
+  const quote = pickIntroQuote(page);
+  return (
+    <div className={`page-content layout-spread-text-intro ${typeClass}`}>
+      {page.type === 'climax' && <div className="climax-sparkles" aria-hidden>✨</div>}
+      <span className={`page-type-tag tag-${page.type || 'middle'}`}>{TYPE_LABELS[page.type] || page.label}</span>
+      {quote ? <p className="intro-quote">{quote}</p> : null}
+      <div className="intro-ornament" aria-hidden>· · ·</div>
+    </div>
+  );
+}
+
 /* ---------- 펼침면 (spread) 분리 ---------- */
 function SpreadImage({ page, onZoom }) {
   const typeClass = `is-${page.type || 'middle'}`;
@@ -213,13 +239,15 @@ function SpreadImage({ page, onZoom }) {
     </div>
   );
 }
-function SpreadText({ page, total }) {
+function SpreadText({ page, total, hideHeader }) {
   const typeClass = `is-${page.type || 'middle'}`;
   return (
     <div className={`page-content layout-typography ${typeClass}`}>
       {page.type === 'climax' && <div className="climax-sparkles" aria-hidden>✨</div>}
-      <span className={`page-type-tag tag-${page.type || 'middle'}`}>{TYPE_LABELS[page.type] || page.label}</span>
-      {page.prompt && <p className="page-prompt">{page.prompt}</p>}
+      {!hideHeader && (
+        <span className={`page-type-tag tag-${page.type || 'middle'}`}>{TYPE_LABELS[page.type] || page.label}</span>
+      )}
+      {!hideHeader && page.prompt && <p className="page-prompt">{page.prompt}</p>}
       <div className="page-text" style={{ textAlign: 'left', maxWidth: '100%' }}>{page.text || ' '}</div>
       <span className="page-number">{page.page} / {total}</span>
     </div>
@@ -232,6 +260,8 @@ function PageRenderer({ page, book, layout, kind = 'full', total, coverVariant, 
   if (page.type === 'cover' || kind === 'cover') return <CoverPage book={book} variant={coverVariant} onZoom={onZoom} />;
   if (page.type === 'author' || kind === 'author') return <AuthorPage book={book} />;
   if (kind === 'spread-image') return <SpreadImage page={page} onZoom={onZoom} />;
+  if (kind === 'spread-text-intro') return <SpreadTextIntro page={page} />;
+  if (kind === 'spread-text-cont') return <SpreadText page={page} total={total} hideHeader />;
   if (kind === 'spread-text') return <SpreadText page={page} total={total} />;
   return <StoryPage page={page} layout={layout} total={total} onZoom={onZoom} />;
 }
