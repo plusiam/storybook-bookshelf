@@ -1387,16 +1387,19 @@ html, body {
 .page-face.right-side .page-number,
 .page-face .page-number { right: 22px; }
 
-/* 레이아웃: classic — 그림 위, 텍스트 아래 */
+/* 레이아웃: classic — 그림 위, 텍스트 아래
+   본문이 그림 아래쪽 영역에 잘리는 사례 방지를 위해 텍스트 비율을 60%까지 허용.
+   그림은 40%로 자동 축소되어도 그림책 한 면 비율로 충분 */
 .layout-classic { gap: 14px; }
 .layout-classic .page-image {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
+  max-height: 40%;
   min-height: 0;
   margin-bottom: 0;
 }
 .layout-classic .page-text-block {
-  flex: 0 0 auto;
-  max-height: 50%;
+  flex: 1 1 auto;
+  max-height: 60%;
   overflow-y: auto;
 }
 
