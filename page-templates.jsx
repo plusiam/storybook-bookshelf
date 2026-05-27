@@ -189,9 +189,12 @@ function AuthorPage({ book }) {
   );
 }
 
-/* ---------- 일반 페이지 — type별 시각 차별화 ---------- */
+/* ---------- 일반 페이지 — type별 시각 차별화 ----------
+   그림이 없는 페이지는 typography로 강제해 모바일 SlideMode와 flat 모드에서
+   🎨 placeholder 대신 글 전용 책 페이지로 보임 */
 function StoryPage({ page, layout, total, onZoom }) {
-  const eff = layout === 'spread' ? 'classic' : layout;
+  const base = layout === 'spread' ? 'classic' : layout;
+  const eff = hasDrawing(page) ? base : 'typography';
   const typeClass = `is-${page.type || 'middle'}`;
 
   return (
