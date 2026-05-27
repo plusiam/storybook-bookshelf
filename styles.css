@@ -1351,7 +1351,18 @@ html, body {
   word-break: keep-all;
   overflow-wrap: break-word;
   text-wrap: pretty;
+  /* 안전망 — 입력 측 제한이 약한 기존 JSON 대응. 글이 한 면을 넘치면 잘리지 않고 스크롤되며 하단이 페이드로 흐려 책 느낌 유지 */
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-soft) transparent;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 28px), transparent 100%);
 }
+.page-text::-webkit-scrollbar { width: 6px; }
+.page-text::-webkit-scrollbar-thumb { background: var(--accent-soft); border-radius: 3px; }
+.page-text::-webkit-scrollbar-track { background: transparent; }
 
 .page-prompt {
   font-family: var(--font-hand);
@@ -1573,8 +1584,22 @@ html, body {
   color: var(--ink);
   margin: 0 0 8px;
   letter-spacing: -1px;
-  line-height: 1.05;
+  line-height: 1.15;
   text-wrap: balance;
+  /* 긴 제목(최대 30자) 안전망 — 한글 자연 줄바꿈 + 2~3줄 허용 */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+/* 글자 수 많은 제목 — 자동으로 폰트 한 단계 작게. CoverPage에서 길이로 클래스 부여 */
+.cover-title.is-long {
+  font-size: clamp(18px, 4.2cqw, 44px);
+  letter-spacing: -0.5px;
+}
+.cover-title.is-very-long {
+  font-size: clamp(16px, 3.4cqw, 34px);
+  letter-spacing: -0.3px;
+  line-height: 1.25;
 }
 
 .cover-subtitle {
@@ -1915,7 +1940,12 @@ html, body {
     font-weight: bold;
     text-align: center;
     margin: 0 0 3mm;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    line-height: 1.2;
   }
+  .print-half .ph-title.is-long { font-size: 18pt; }
+  .print-half .ph-title.is-very-long { font-size: 14pt; }
   .print-half .ph-subtitle {
     font-size: 10pt;
     color: #666;
@@ -2092,6 +2122,8 @@ html, body {
   margin: 0;
   font-size: clamp(28px, 5vw, 44px);
 }
+.cover-fullbleed-overlay .cover-title.is-long { font-size: clamp(22px, 4vw, 36px); }
+.cover-fullbleed-overlay .cover-title.is-very-long { font-size: clamp(18px, 3.2vw, 28px); }
 .cover-fullbleed-overlay .cover-subtitle {
   color: rgba(255,255,255,0.92);
   background: rgba(0,0,0,0.25);

@@ -69,12 +69,21 @@ function ImageSlot({ page, label, onZoom }) {
 }
 
 /* ---------- 표지 — 4가지 템플릿 ---------- */
+// 제목 길이별 자동 축소 클래스 — 입력 측 정책 최대 30자까지 잘림 없이
+function titleSizeClass(t) {
+  const n = (t || '').length;
+  if (n >= 18) return 'is-very-long';
+  if (n >= 12) return 'is-long';
+  return '';
+}
 function CoverPage({ book, variant = 'classic', onZoom }) {
   const s = book.student || {};
   const lps = (s.learnerProfiles || []).filter(Boolean);
   const primary = s.learnerProfilePrimary;
   const coverPage = book.pages.find((p) => p.type === 'cover');
   const hasImg = coverPage && hasDrawing(coverPage);
+  const titleText = s.title || '제목 없는 그림책';
+  const titleCls = `cover-title ${titleSizeClass(titleText)}`.trim();
 
   if (variant === 'fullbleed') {
     return (
@@ -82,7 +91,7 @@ function CoverPage({ book, variant = 'classic', onZoom }) {
         {hasImg && <img className="cover-fullbleed-img" src={coverPage.drawing} alt="" />}
         <div className="cover-fullbleed-overlay">
           <p className="cover-tag">📖 나의 그림책</p>
-          <h1 className="cover-title">{s.title || '제목 없는 그림책'}</h1>
+          <h1 className={titleCls}>{titleText}</h1>
           {s.protagonist && <span className="cover-subtitle">주인공 · {s.protagonist}</span>}
           <div className="cover-credit"><p className="cover-author-name">글·그림 {s.name || ''}{s.class ? ` · ${s.class}반` : ''}</p></div>
         </div>
@@ -98,7 +107,7 @@ function CoverPage({ book, variant = 'classic', onZoom }) {
         </div>
         <div className="cover-split-text">
           <p className="cover-tag">{s.class ? `${s.class}반의 그림책` : '나의 그림책'}</p>
-          <h1 className="cover-title">{s.title || '제목 없는 그림책'}</h1>
+          <h1 className={titleCls}>{titleText}</h1>
           {s.protagonist && <p className="cover-subtitle">— {s.protagonist}의 이야기 —</p>}
           {lps.length > 0 && (
             <div className="lp-badges">
@@ -118,7 +127,7 @@ function CoverPage({ book, variant = 'classic', onZoom }) {
       <div className="cover cover-frame">
         <div className="cover-frame-deco">
           <p className="cover-tag">📖 나의 그림책</p>
-          <h1 className="cover-title">{s.title || '제목 없는 그림책'}</h1>
+          <h1 className={titleCls}>{titleText}</h1>
           {s.protagonist && <span className="cover-subtitle">주인공 · {s.protagonist}</span>}
         </div>
         <div className="cover-frame-image">
@@ -141,7 +150,7 @@ function CoverPage({ book, variant = 'classic', onZoom }) {
     <div className="cover">
       <p className="cover-tag">📖 나의 그림책</p>
       <div className="cover-title-block">
-        <h1 className="cover-title">{s.title || '제목 없는 그림책'}</h1>
+        <h1 className={titleCls}>{titleText}</h1>
         {s.protagonist && <span className="cover-subtitle">주인공 · {s.protagonist}</span>}
       </div>
       {hasImg ? (

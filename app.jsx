@@ -304,9 +304,12 @@ function PrintHalf({ page, book }) {
   if (!page) return <div className="print-half empty" />;
   const p = page;
   if (p.type === 'cover') {
+    const title = book.student?.title || '';
+    const n = title.length;
+    const titleCls = n >= 18 ? 'ph-title is-very-long' : n >= 12 ? 'ph-title is-long' : 'ph-title';
     return (
       <div className="print-half">
-        <div className="ph-title">{book.student?.title}</div>
+        <div className={titleCls}>{title}</div>
         {book.student?.protagonist && (
           <div className="ph-subtitle">주인공 · {book.student.protagonist}</div>
         )}
