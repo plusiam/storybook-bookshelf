@@ -259,6 +259,15 @@ function BookViewer({ book, mode, layout, soundOn, coverVariant, initialPos = 0,
     }, 850);
   }, [mode, effectiveMode, spreadIdx, flipping, playSound]);
 
+  // 마지막 페이지에서 표지(첫 면)로 단숨에 돌아가기
+  const goFirst = useCallbackBook(() => {
+    clearTimeout(flipTimerRef.current);
+    setFlipping(false);
+    if (mode === 'slide' || effectiveMode === 'mobile-book') setSlideIdx(0);
+    else setSpreadIdx(0);
+    playSound();
+  }, [mode, effectiveMode, playSound]);
+
   // 키보드 내비
   useEffectBook(() => {
     const onKey = (e) => {
@@ -335,6 +344,11 @@ function BookViewer({ book, mode, layout, soundOn, coverVariant, initialPos = 0,
       {stageContent}
       <button className="nav-arrow prev" onClick={goPrev} disabled={!canPrev} aria-label="이전 페이지">‹</button>
       <button className="nav-arrow next" onClick={goNext} disabled={!canNext} aria-label="다음 페이지">›</button>
+      {!canNext && progressTotal > 1 && (
+        <button className="restart-btn" onClick={goFirst} aria-label="처음으로 돌아가기">
+          ↺ 처음으로
+        </button>
+      )}
       <BookProgress idx={progressIdx} total={progressTotal} onJump={(i) => {
         if (mode === 'slide' || effectiveMode === 'mobile-book') setSlideIdx(i);
         else setSpreadIdx(i);
